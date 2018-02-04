@@ -4,8 +4,10 @@ import server.api.CommunicationManager;
 import shared.Protocol;
 import shared.Message;
 
+import java.net.DatagramPacket;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
 
 public class ClientLiaison implements CommunicationManager {
 
@@ -42,4 +44,32 @@ public class ClientLiaison implements CommunicationManager {
     public boolean Ping() {
         return false;
     }
+
+    /** Following might be useful? Accidentally started implementing sending through UDP on client side **/
+    /*
+
+    public boolean createAndSendMessage(Message message) {
+        try {
+            message.validate();
+
+            DatagramPacket subscriptionDatagram = createMessagePacket(message);
+            sendMessage(subscriptionDatagram);
+
+        } catch (IllegalArgumentException ia) {
+            LOGGER.log(Level.SEVERE, ia.toString());
+            return false;
+        }
+        return true;
+    }
+
+    public DatagramPacket createMessagePacket(Message message) {
+        String rawMessage = message.asRawMessage();
+
+    }
+
+    public boolean sendMessage(DatagramPacket messagePacket) {
+
+    }
+    */
+
 }

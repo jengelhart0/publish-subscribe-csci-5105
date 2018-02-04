@@ -1,10 +1,9 @@
 package shared;
 
-import java.util.HashMap;
-
 public interface Message {
 //    HashMap<String, String> getQuery();
-//    String getRaw();
+    String asRawMessage();
     void generateQuery();
-    boolean validate(String subscription);
+    boolean validate();
+    Protocol getProtocol();
 }

@@ -3,6 +3,8 @@ package shared;
 import java.util.HashMap;
 
 public class Article implements Message {
+    private int MESSAGESIZE = 120;
+
     private String creatorIp;
     private String creatorPort;
 
@@ -20,9 +22,14 @@ public class Article implements Message {
 
         String[] fields = {"type", "orginator", "org", "contents"};
         String delimiter = ";";
-        this.articleProtocol = new Protocol(fields, delimiter);
+        this.articleProtocol = new Protocol(fields, delimiter, MESSAGESIZE);
 
         generateQuery();
+    }
+
+    @Override
+    public String asRawMessage() {
+        return this.asRawMessage;
     }
 
     @Override
@@ -31,7 +38,12 @@ public class Article implements Message {
     }
 
     @Override
-    public boolean validate(String subscription) {
+    public boolean validate() {
         return false;
+    }
+
+    @Override
+    public Protocol getProtocol() {
+        return this.articleProtocol;
     }
 }

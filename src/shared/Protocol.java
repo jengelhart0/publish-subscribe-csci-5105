@@ -3,14 +3,19 @@ package shared;
 import java.util.HashMap;
 
 public class Protocol {
-    String[] fields;
-    String delimiter;
+    private String[] fields;
+    private String delimiter;
+    private int messageSize;
 
-    public Protocol(String[] fields, String delimiter) {
+    Protocol(String[] fields, String delimiter, int messageSize) {
         this.fields = fields;
         this.delimiter = delimiter;
     }
     public HashMap<String, String> createQuery(String message) {
+        return null;
+    }
 
+    public int getMessageSize() {
+        return this.messageSize;
     }
 }
