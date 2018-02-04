@@ -1,4 +1,4 @@
-package server.api;
+package shared;
 
 import java.util.HashMap;
 
@@ -10,10 +10,6 @@ public class Protocol {
         this.fields = fields;
         this.delimiter = delimiter;
     }
-    public String createProtocolString(HashMap<String, String> messageQuery) {
-
-    }
-
     public HashMap<String, String> createQuery(String message) {
 
     }

@@ -1,10 +1,10 @@
-package server.api;
+package shared;
 
 import java.util.HashMap;
 
 public interface Message {
 //    HashMap<String, String> getQuery();
 //    String getRaw();
-    void makeQuery();
+    void generateQuery();
     boolean validate(String subscription);
 }

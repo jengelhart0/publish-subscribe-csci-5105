@@ -1,14 +1,13 @@
-package server.article;
-
-import server.api.Protocol;
-import server.api.Message;
+package shared;
 
 import java.util.HashMap;
 
 public class ArticleSubscription implements Message {
+
+    private Protocol subscriptionProtocol;
+
     private String asRawMessage;
     private HashMap<String, String> query;
-    private Protocol subscriptionProtocol;
 
     private ArticleSubscription(String subscription) {
         // TODO: validate/exception handle
@@ -17,7 +16,7 @@ public class ArticleSubscription implements Message {
         String delimiter = ";";
         this.subscriptionProtocol = new Protocol(fields, delimiter);
 
-        makeQuery();
+        generateQuery();
     }
 
     @Override
@@ -26,7 +25,7 @@ public class ArticleSubscription implements Message {
     }
 
     @Override
-    public void makeQuery() {
+    public void generateQuery() {
 
     }
 }

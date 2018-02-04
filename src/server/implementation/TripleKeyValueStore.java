@@ -1,8 +1,8 @@
-package server.triplekeyvaluestore;
+package server.implementation;
 
-import server.api.Protocol;
+import shared.Protocol;
 import server.api.MessageStore;
-import server.api.Message;
+import shared.Message;
 
 import java.util.HashSet;
 
