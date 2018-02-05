@@ -111,10 +111,10 @@ public class Client {
         this.communicate = (Communicate) registry.lookup(name);
     }
 
-    private void establishMessageListener()
+    private void establishMessageListener(Protocol protocol)
             throws UnknownHostException, SocketException {
 
-        this.listener = new ClientListener();
+        this.listener = new ClientListener(protocol);
         this.listener.listenAt(this.listenPort, this.localAddress);
 
         this.listenerThread = new Thread(this.listener);

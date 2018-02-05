@@ -3,6 +3,9 @@ package client;
 import shared.Message;
 import shared.Protocol;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -12,8 +15,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ClientListener implements Runnable {
-
-    int
 
     // TODO: NEED TO EXAMINE WHETHER THERE ARE BETTER SYNCH OPTIONS
     private Set<Message> messageFeed;
@@ -43,6 +44,26 @@ public class ClientListener implements Runnable {
 
     @Override
     public void run() {
-        DatagramPacket inPacket = new DatagramPacket(new byte[120])
+        int messageSize = this.protocol.getMessageSize();
+        while(true) {
+            Message newMessage = getMessageFromRemote(messageSize);
+            this.messageFeed.add(newMessage);
+        }
+    }
+
+    private Message getMessageFromRemote(int messageSize) throws IOException {
+        DatagramPacket packetFromRemote = new DatagramPacket(new byte[messageSize], messageSize);
+
+        this.listenSocket.receive(packetFromRemote);
+
+        DataInputStream inputStream = new DataInputStream(
+                new ByteArrayInputStream(
+                        packetFromRemote.getData()
+                )
+        );
+        byte[] newMessageData = new byte[messageSize];
+        inputStream.read(newMessageData);
+        Message newMessage = new Message(this.protocol, new String(newMessageData, "UTF8"));
+
     }
 }
