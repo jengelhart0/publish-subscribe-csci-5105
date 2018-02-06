@@ -1,7 +1,10 @@
 package communicate;
 
+import shared.Protocol;
+
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.Arrays;
 
 public interface Communicate extends Remote {
     boolean JoinServer(String IP, int Port) throws RemoteException;

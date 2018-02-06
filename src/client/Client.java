@@ -8,37 +8,46 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
 import communicate.Communicate;
+import communicate.CommunicateArticle;
 import shared.Message;
 import shared.Protocol;
 
 enum RemoteMessageCall {
-    PUBLISH, SUBSCRIBE, UNSUBSCRIBE
+    JOIN, LEAVE, PUBLISH, SUBSCRIBE, UNSUBSCRIBE
 }
 
 public class Client {
     private static final Logger LOGGER = Logger.getLogger( Client.class.getName() );
 
-    private Communicate communicate = null;
+    private CommunicateArticle communicate = null;
     private String remoteHost;
+    private Protocol protocol;
 
     private Thread listenerThread = null;
+    private Thread pingThread = null;
     private ClientListener listener = null;
 
     private InetAddress localAddress;
     private int listenPort;
 
-    public Client (String remoteHost, InetAddress localAddress, int listenPort) {
+    public Client (String remoteHost, Protocol protocol, InetAddress localAddress, int listenPort) {
         this.remoteHost = remoteHost;
+        this.protocol = protocol;
         this.localAddress = localAddress;
         this.listenPort = listenPort;
+    }
+
+    public boolean Join() {
+        return CommunicateWithRemote(RemoteMessageCall.JOIN);
+    }
+
+    public boolean Leave() {
+        return CommunicateWithRemote(RemoteMessageCall.LEAVE);
     }
 
     public boolean Publish(Message message) {
@@ -49,45 +58,65 @@ public class Client {
         return CommunicateWithRemote(subscription, RemoteMessageCall.SUBSCRIBE);
     }
 
+    public boolean Unsubscribe(Message subscription) {
+        return CommunicateWithRemote(subscription, RemoteMessageCall.UNSUBSCRIBE);
+    }
+
+    public boolean Ping() {
+        
+    }
+
+    private boolean CommunicateWithRemote(RemoteMessageCall call) {
+        return CommunicateWithRemote(null, call);
+    }
+
     private boolean CommunicateWithRemote(Message message, RemoteMessageCall call) {
         try {
             if (!remoteCommunicationReady()) {
-                establishRemoteCommunication(message.getProtocol());
+                establishRemoteCommunication();
             }
-
-            String address = this.localAddress.getHostAddress();
-            boolean isCallSuccessful = false;
-            // TODO: replace this by having communicate calls implement function interface and just pass the function
-            switch (call) {
-                case PUBLISH:
-                    isCallSuccessful = communicate.Publish(
-                            message.asRawMessage(), address, this.listenPort);
-                    break;
-                case SUBSCRIBE:
-                    isCallSuccessful = communicate.Subscribe(
-                            address, this.listenPort, message.asRawMessage());
-                    break;
-                case UNSUBSCRIBE:
-                    isCallSuccessful = communicate.Unsubscribe(
-                            address, this.listenPort, message.asRawMessage());
-                    break;
-
-                default:
-                    throw new IllegalArgumentException("Invalid RemoteMessageCall passed");
-            }
-
+            boolean isCallSuccessful = makeCall(message, call);
             if (!isCallSuccessful) {
                 throw new RemoteException("Communication attempt returned failure (i.e., false).");
             }
         } catch (RemoteException | NotBoundException | UnknownHostException |
                  IllegalArgumentException | SocketException e) {
-
             LOGGER.log(Level.SEVERE,
                     "Attempt to establish communication or communicate" + message.asRawMessage() +
                             "failed: " + e.toString());
             return false;
         }
         return true;
+    }
+
+    private boolean makeCall(Message message, RemoteMessageCall call)
+            throws RemoteException {
+        String address = this.localAddress.getHostAddress();
+        // TODO: replace this by having communicate calls implement function interface and just pass the function
+        if (message == null) {
+            switch (call) {
+                case JOIN:
+                    return communicate.Join(address, this.listenPort);
+                case LEAVE:
+                    return communicate.Leave(address, this.listenPort);
+                default:
+                    throw new IllegalArgumentException(
+                            "Either Invalid RemoteMessageCall passed or message was null");
+            }
+        }
+        switch (call) {
+            case PUBLISH:
+                return communicate.Publish(
+                        message.asRawMessage(), address, this.listenPort);
+            case SUBSCRIBE:
+                return communicate.Subscribe(
+                        address, this.listenPort, message.asRawMessage());
+            case UNSUBSCRIBE:
+                return communicate.Unsubscribe(
+                        address, this.listenPort, message.asRawMessage());
+            default:
+                throw new IllegalArgumentException("Invalid RemoteMessageCall passed");
+        }
     }
 
     private boolean remoteCommunicationReady() {
@@ -97,24 +126,23 @@ public class Client {
                 && (this.listenPort >= 0);
     }
 
-    private void establishRemoteCommunication(Protocol protocol)
+    private void establishRemoteCommunication()
             throws RemoteException, NotBoundException, UnknownHostException, SocketException {
 
-        establishMessageListener(protocol);
+        establishMessageListener();
 
         if(System.getSecurityManager() == null) {
             System.setSecurityManager(new SecurityManager());
         }
 
-        String name = "Communicate";
         Registry registry = LocateRegistry.getRegistry(this.remoteHost);
-        this.communicate = (Communicate) registry.lookup(name);
+        this.communicate = (CommunicateArticle) registry.lookup(CommunicateArticle.NAME);
     }
 
-    private void establishMessageListener(Protocol protocol)
+    private void establishMessageListener()
             throws UnknownHostException, SocketException {
 
-        this.listener = new ClientListener(protocol);
+        this.listener = new ClientListener(this.protocol);
         this.listener.listenAt(this.listenPort, this.localAddress);
 
         this.listenerThread = new Thread(this.listener);
@@ -132,7 +160,7 @@ public class Client {
 
     public static void main(String[] args) throws UnknownHostException {
         InetAddress localAddress = InetAddress.getLocalHost();
-        Client testClient = new Client("localhost", localAddress, 8888);
+        Client testClient = new Client("localhost", CommunicateArticle.ARTICLE_PROTOCOL, localAddress, 8888);
     }
 
 }

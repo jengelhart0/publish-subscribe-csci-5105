@@ -17,7 +17,10 @@ public class Message {
         // TODO: validate message/handle exceptions
 
         this.protocol = protocol;
-        protocol.validate(rawMessage);
+
+        if (!validate()) {
+            throw new IllegalArgumentException();
+        }
 
         this.asRawMessage = rawMessage;
         this.creatorIp = creatorIp;
@@ -28,6 +31,10 @@ public class Message {
 
     public Message(Protocol protocol, String rawMessage) {
         this(protocol, rawMessage, null, null);
+    }
+
+    public boolean validate() {
+        return this.protocol.validate(this.asRawMessage);
     }
 
     public String asRawMessage() {

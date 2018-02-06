@@ -1,6 +1,7 @@
 package server.implementation;
 
 import communicate.Communicate;
+import communicate.CommunicateArticle;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -75,12 +76,11 @@ public class Coordinator implements Communicate {
             System.setSecurityManager(new SecurityManager());
         }
         try {
-            String name = "Communicate";
             Communicate coordinator = Coordinator.getInstance();
             Communicate stub =
                     (Communicate) UnicastRemoteObject.exportObject(coordinator, 0);
             Registry registry = LocateRegistry.getRegistry();
-            registry.rebind(name, stub);
+            registry.rebind(CommunicateArticle.NAME, stub);
             LOGGER.log(Level.FINE, "Coordinator bound");
         } catch (RemoteException re) {
             LOGGER.log(Level.SEVERE, re.toString());

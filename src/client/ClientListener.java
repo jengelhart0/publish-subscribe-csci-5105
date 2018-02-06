@@ -13,16 +13,16 @@ import java.net.SocketException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ClientListener implements Runnable {
+    private static final Logger LOGGER = Logger.getLogger( ClientListener.class.getName() );
 
     // TODO: NEED TO EXAMINE WHETHER THERE ARE BETTER SYNCH OPTIONS
     private Set<Message> messageFeed;
 
     private Protocol protocol;
-
-    private InetAddress localAddress;
-    private int listenPort;
     private DatagramSocket listenSocket = null;
 
     ClientListener(Protocol protocol) {
@@ -31,8 +31,6 @@ public class ClientListener implements Runnable {
     }
 
     void listenAt(int listenPort, InetAddress localAddress) throws SocketException {
-        this.listenPort = listenPort;
-        this.localAddress = localAddress;
         this.listenSocket = new DatagramSocket(listenPort, localAddress);
     }
 
@@ -45,25 +43,27 @@ public class ClientListener implements Runnable {
     @Override
     public void run() {
         int messageSize = this.protocol.getMessageSize();
+
+        byte[] messageBuffer = new byte[messageSize];
+        DatagramPacket packetToReceive = new DatagramPacket(new byte[messageSize], messageSize);
+
         while(true) {
-            Message newMessage = getMessageFromRemote(messageSize);
-            this.messageFeed.add(newMessage);
+            try {
+                Message newMessage = getMessageFromRemote(messageBuffer, packetToReceive);
+                this.messageFeed.add(newMessage);
+            } catch (IOException | IllegalArgumentException e) {
+                LOGGER.log(Level.WARNING, "ClientListener failed to receive incoming message: " + e.toString());
+            }
         }
     }
 
-    private Message getMessageFromRemote(int messageSize) throws IOException {
-        DatagramPacket packetFromRemote = new DatagramPacket(new byte[messageSize], messageSize);
+    private Message getMessageFromRemote(byte[] messageBuffer, DatagramPacket packetToReceive) throws IOException {
+        this.listenSocket.receive(packetToReceive);
 
-        this.listenSocket.receive(packetFromRemote);
-
-        DataInputStream inputStream = new DataInputStream(
-                new ByteArrayInputStream(
-                        packetFromRemote.getData()
-                )
-        );
-        byte[] newMessageData = new byte[messageSize];
-        inputStream.read(newMessageData);
-        Message newMessage = new Message(this.protocol, new String(newMessageData, "UTF8"));
-
+        try (DataInputStream inputStream = new DataInputStream(
+                new ByteArrayInputStream(packetToReceive.getData()))) {
+            inputStream.read(messageBuffer);
+        }
+        return new Message(this.protocol, new String(messageBuffer, "UTF8"));
     }
 }
