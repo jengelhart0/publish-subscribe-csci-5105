@@ -93,7 +93,7 @@ public class Coordinator implements Communicate {
     }
 
     private List<String> getListOfServers() {
-
+        return null;
     }
 
     @Override

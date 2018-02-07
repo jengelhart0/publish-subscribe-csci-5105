@@ -123,48 +123,45 @@ public class Client implements Runnable {
     @Override
     public void run() {
         try {
-            establishRemoteCommunication();
+            initializeRemoteCommunication();
             while(true) {
                 ping();
                 Thread.sleep(10000);
             }
-        } catch (RemoteException | InterruptedException e) {
+        } catch (RemoteException | NotBoundException | InterruptedException | SocketException e) {
             LOGGER.log(Level.SEVERE, e.toString());
         } finally {
             cleanup();
         }
     }
 
-    private void establishRemoteCommunication() {
-        try {
-            establishMessageListener();
+    private void initializeRemoteCommunication() throws RemoteException, NotBoundException, SocketException {
+        establishMessageListener();
+        establishSecurityManager();
+        establishRemoteObject();
+        join();
+    }
 
-            if (System.getSecurityManager() == null) {
-                System.setSecurityManager(new SecurityManager());
-            }
-            Registry registry = LocateRegistry.getRegistry(this.remoteHost);
-            this.communicate = (Communicate) registry.lookup(this.communicateName);
-        } catch (RemoteException | NotBoundException e) {
-            LOGGER.log(Level.SEVERE, e.toString());
-        } finally {
-            cleanup();
+    private void establishMessageListener() throws SocketException {
+        this.listener = new ClientListener(this.protocol);
+        this.listener.listenAt(this.listenPort, this.localAddress);
+        this.listenerThread = new Thread(this.listener);
+        this.listenerThread.start();
+    }
+
+    private void establishSecurityManager() {
+        if (System.getSecurityManager() == null) {
+            System.setSecurityManager(new SecurityManager());
         }
     }
 
-    private void establishMessageListener() {
-        try {
-            this.listener = new ClientListener(this.protocol);
-            this.listener.listenAt(this.listenPort, this.localAddress);
-            this.listenerThread = new Thread(this.listener);
-            this.listenerThread.start();
-        } catch (SocketException e) {
-            LOGGER.log(Level.SEVERE, e.toString());
-        } finally {
-            cleanup();
-        }
+    private void establishRemoteObject() throws RemoteException, NotBoundException {
+        Registry registry = LocateRegistry.getRegistry(this.remoteHost);
+        this.communicate = (Communicate) registry.lookup(this.communicateName);
     }
 
     private void cleanup() {
+        leave();
         this.listener.tellThreadToStop();
     }
 
