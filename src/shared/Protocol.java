@@ -1,6 +1,7 @@
 package shared;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class Protocol {
     // It is understood that all messages have data/payload fields,
@@ -14,11 +15,12 @@ public class Protocol {
         this.delimiter = delimiter;
         this.messageSize = messageSize;
     }
-    public HashMap<String, String> createQuery(String message) {
+
+    public Map<String, String> createQuery(String message) {
         return null;
     }
 
-    public String asRawMessage(HashMap<String, String> query) {
+    public String asRawMessage(Map<String, String> query) {
         return null;
     }
 

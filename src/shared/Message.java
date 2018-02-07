@@ -1,6 +1,7 @@
 package shared;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class Message {
     private int MESSAGESIZE = 120;
@@ -10,7 +11,7 @@ public class Message {
 
     private Protocol protocol;
     private String asRawMessage;
-    private HashMap<String, String> query;
+    private Map<String, String> query;
 
 
     public Message(Protocol protocol, String rawMessage, String creatorIp, String creatorPort) {

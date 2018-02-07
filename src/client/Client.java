@@ -31,11 +31,11 @@ public class Client implements Runnable {
     private int listenPort;
 
     public Client (String remoteHost, String communicateName, Protocol protocol,
-                   InetAddress localAddress, int listenPort) {
+                   int listenPort) throws UnknownHostException {
         this.remoteHost = remoteHost;
         this.communicateName = communicateName;
         this.protocol = protocol;
-        this.localAddress = localAddress;
+        this.localAddress = InetAddress.getLocalHost();
         this.listenPort = listenPort;
     }
 
@@ -178,12 +178,10 @@ public class Client implements Runnable {
     }
 
     public static void main(String[] args) throws UnknownHostException {
-        InetAddress localAddress = InetAddress.getLocalHost();
         Client testClient = new Client(
                 "localhost",
                 CommunicateArticle.NAME,
                 CommunicateArticle.ARTICLE_PROTOCOL,
-                localAddress,
                 8888);
 
         new Thread(testClient).start();

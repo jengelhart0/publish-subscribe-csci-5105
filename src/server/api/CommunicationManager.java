@@ -4,8 +4,7 @@ import shared.Message;
 import shared.Protocol;
 
 public interface CommunicationManager {
-    boolean Subscribe(Message message);
-    boolean Unsubscribe(Message message);
-    boolean Publish(Protocol messageProtocol);
-    boolean Ping();
+    boolean subscribe(Message message);
+    boolean unsubscribe(Message message);
+    boolean publish(Protocol messageProtocol);
 }

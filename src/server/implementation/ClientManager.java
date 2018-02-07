@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 
-public class ClientLiaison implements CommunicationManager {
+public class ClientManager implements CommunicationManager {
 
     String clientIp;
     String clientPort;
@@ -17,7 +17,7 @@ public class ClientLiaison implements CommunicationManager {
     Set<Message> subscriptions;
     Set<Message> publications;
 
-    public ClientLiaison(String clientIp, String clientPort) {
+    public ClientManager(String clientIp, String clientPort) {
         this.clientIp = clientIp;
         this.clientPort = clientPort;
 
@@ -26,22 +26,17 @@ public class ClientLiaison implements CommunicationManager {
     }
 
     @Override
-    public boolean Subscribe(Message message) {
+    public boolean subscribe(Message message) {
         return false;
     }
 
     @Override
-    public boolean Unsubscribe(Message message) {
+    public boolean unsubscribe(Message message) {
         return false;
     }
 
     @Override
-    public boolean Publish(Protocol messageProtocol) {
-        return false;
-    }
-
-    @Override
-    public boolean Ping() {
+    public boolean publish(Protocol messageProtocol) {
         return false;
     }
 
