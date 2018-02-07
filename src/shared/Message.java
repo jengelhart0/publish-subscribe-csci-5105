@@ -48,4 +48,13 @@ public class Message {
     public Protocol getProtocol() {
         return this.protocol;
     }
+
+    public String getContents() {
+        return "";
+    }
+
+    public boolean isHeartbeat() {
+        return false;
+    }
+
 }

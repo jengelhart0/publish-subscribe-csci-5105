@@ -25,13 +25,23 @@ public class ClientListener implements Runnable {
     private Protocol protocol;
     private DatagramSocket listenSocket = null;
 
+    private boolean shouldThreadStop;
+    private final Object stopLock = new Object();
+
     ClientListener(Protocol protocol) {
         this.messageFeed = Collections.synchronizedSet(new HashSet<>());
         this.protocol = protocol;
+        this.shouldThreadStop = false;
     }
 
     void listenAt(int listenPort, InetAddress localAddress) throws SocketException {
         this.listenSocket = new DatagramSocket(listenPort, localAddress);
+    }
+
+    void tellThreadToStop() {
+        synchronized (this.stopLock) {
+            this.shouldThreadStop = true;
+        }
     }
 
     Set<Message> getCurrentMessageFeed() {
@@ -46,14 +56,18 @@ public class ClientListener implements Runnable {
 
         byte[] messageBuffer = new byte[messageSize];
         DatagramPacket packetToReceive = new DatagramPacket(new byte[messageSize], messageSize);
-
-        while(true) {
-            try {
+        try {
+            while(true) {
+                if (shouldThreadStop()) {
+                    return;
+                }
                 Message newMessage = getMessageFromRemote(messageBuffer, packetToReceive);
                 this.messageFeed.add(newMessage);
-            } catch (IOException | IllegalArgumentException e) {
-                LOGGER.log(Level.WARNING, "ClientListener failed to receive incoming message: " + e.toString());
             }
+        } catch (IOException | IllegalArgumentException e) {
+            LOGGER.log(Level.WARNING, "ClientListener failed to receive incoming message: " + e.toString());
+        } finally {
+            this.listenSocket.close();
         }
     }
 
@@ -65,5 +79,11 @@ public class ClientListener implements Runnable {
             inputStream.read(messageBuffer);
         }
         return new Message(this.protocol, new String(messageBuffer, "UTF8"));
+    }
+
+    private boolean shouldThreadStop() {
+        synchronized (this.stopLock) {
+            return this.shouldThreadStop;
+        }
     }
 }
