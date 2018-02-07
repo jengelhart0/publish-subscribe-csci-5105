@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 
 import communicate.Communicate;
 import communicate.CommunicateArticle;
-import communicate.CommunicateArticle.RemoteMessageCall;
+import communicate.Communicate.RemoteMessageCall;
 import shared.Message;
 import shared.Protocol;
 
@@ -136,17 +136,23 @@ public class Client implements Runnable {
     }
 
     private void initializeRemoteCommunication() throws RemoteException, NotBoundException, SocketException {
-        establishMessageListener();
+        startMessageListener();
         establishSecurityManager();
         establishRemoteObject();
         join();
     }
 
-    private void establishMessageListener() throws SocketException {
+    private void startMessageListener() throws SocketException {
         this.listener = new ClientListener(this.protocol);
         this.listener.listenAt(this.listenPort, this.localAddress);
         this.listenerThread = new Thread(this.listener);
         this.listenerThread.start();
+
+        if(!this.listenerThread.isAlive()) {
+            throw new RuntimeException();
+        }
+
+
     }
 
     private void establishSecurityManager() {

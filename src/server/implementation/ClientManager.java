@@ -8,21 +8,39 @@ import java.net.DatagramPacket;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ClientManager implements CommunicationManager {
+    private static final Logger LOGGER = Logger.getLogger( ClientManager.class.getName() );
 
-    String clientIp;
-    String clientPort;
 
-    Set<Message> subscriptions;
-    Set<Message> publications;
+    private String clientIp;
+    private int clientPort;
 
-    public ClientManager(String clientIp, String clientPort) {
+    private Set<Message> subscriptions;
+    private Set<Message> publications;
+
+    public ClientManager(String clientIp, int clientPort) {
         this.clientIp = clientIp;
         this.clientPort = clientPort;
 
         this.subscriptions = new HashSet<>();
         this.publications = new HashSet<>();
+    }
+
+    Runnable task (Message message, CommunicationManager.Call call) {
+        switch(call) {
+            case SUBSCRIBE:
+                return () -> subscribe(message);
+            case PUBLISH:
+                return () -> publish(message);
+            case UNSUBSCRIBE:
+                return () -> unsubscribe(message);
+            case PULL_MATCHES:
+                return this::pullSubscriptionMatches;
+            default:
+                throw new IllegalArgumentException("Task call made to ClientManager not recognized.");
+        }
     }
 
     @Override
@@ -36,16 +54,20 @@ public class ClientManager implements CommunicationManager {
     }
 
     @Override
-    public boolean publish(Protocol messageProtocol) {
+    public boolean publish(Message message) {
         return false;
     }
 
-    /** Following might be useful? Accidentally started implementing sending through UDP on client side **/
-    /*
+    // TODO: Gracefully just return if client has called Leave() (could happen if a pull task is still on executor after Leave()).
+    // TODO: Go ahead an let any other task just finish up in such a circumstance.
 
-    public boolean createAndSendMessage(Message message) {
+    @Override
+    public boolean pullSubscriptionMatches() {
+        return false;
+    }
+
+    private boolean createAndSendMessage(Message message) {
         try {
-            message.validate();
 
             DatagramPacket subscriptionDatagram = createMessagePacket(message);
             sendMessage(subscriptionDatagram);
@@ -57,14 +79,13 @@ public class ClientManager implements CommunicationManager {
         return true;
     }
 
-    public DatagramPacket createMessagePacket(Message message) {
+    private DatagramPacket createMessagePacket(Message message) {
         String rawMessage = message.asRawMessage();
 
     }
 
-    public boolean sendMessage(DatagramPacket messagePacket) {
-
+    private boolean sendMessage(DatagramPacket messagePacket) {
+        return false;
     }
-    */
 
 }

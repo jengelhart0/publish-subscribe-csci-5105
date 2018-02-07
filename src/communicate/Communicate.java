@@ -7,6 +7,11 @@ import java.rmi.RemoteException;
 import java.util.Arrays;
 
 public interface Communicate extends Remote {
+
+    enum RemoteMessageCall {
+        JOIN, LEAVE, PUBLISH, SUBSCRIBE, UNSUBSCRIBE
+    }
+
     boolean JoinServer(String IP, int Port) throws RemoteException;
     boolean LeaveServer(String IP, int Port) throws RemoteException;
     boolean Join(String IP, int Port) throws RemoteException;

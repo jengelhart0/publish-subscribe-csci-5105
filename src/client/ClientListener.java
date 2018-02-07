@@ -1,5 +1,6 @@
 package client;
 
+import listener.Listener;
 import shared.Message;
 import shared.Protocol;
 
@@ -8,40 +9,21 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ClientListener implements Runnable {
+public class ClientListener extends Listener {
     private static final Logger LOGGER = Logger.getLogger( ClientListener.class.getName() );
 
     // TODO: NEED TO EXAMINE WHETHER THERE ARE BETTER SYNCH OPTIONS
     private Set<Message> messageFeed;
 
-    private Protocol protocol;
-    private DatagramSocket listenSocket = null;
-
-    private boolean shouldThreadStop;
-    private final Object stopLock = new Object();
-
     ClientListener(Protocol protocol) {
+        super(protocol);
         this.messageFeed = Collections.synchronizedSet(new HashSet<>());
-        this.protocol = protocol;
-        this.shouldThreadStop = false;
-    }
-
-    void listenAt(int listenPort, InetAddress localAddress) throws SocketException {
-        this.listenSocket = new DatagramSocket(listenPort, localAddress);
-    }
-
-    void tellThreadToStop() {
-        synchronized (this.stopLock) {
-            this.shouldThreadStop = true;
-        }
     }
 
     Set<Message> getCurrentMessageFeed() {
@@ -52,7 +34,7 @@ public class ClientListener implements Runnable {
 
     @Override
     public void run() {
-        int messageSize = this.protocol.getMessageSize();
+        int messageSize = super.getProtocol().getMessageSize();
 
         byte[] messageBuffer = new byte[messageSize];
         DatagramPacket packetToReceive = new DatagramPacket(new byte[messageSize], messageSize);
@@ -67,23 +49,17 @@ public class ClientListener implements Runnable {
         } catch (IOException | IllegalArgumentException e) {
             LOGGER.log(Level.WARNING, "ClientListener failed to receive incoming message: " + e.toString());
         } finally {
-            this.listenSocket.close();
+            super.closeListenSocket();
         }
     }
 
     private Message getMessageFromRemote(byte[] messageBuffer, DatagramPacket packetToReceive) throws IOException {
-        this.listenSocket.receive(packetToReceive);
+        super.receivePacket(packetToReceive);
 
         try (DataInputStream inputStream = new DataInputStream(
                 new ByteArrayInputStream(packetToReceive.getData()))) {
             inputStream.read(messageBuffer);
         }
-        return new Message(this.protocol, new String(messageBuffer, "UTF8"));
-    }
-
-    private boolean shouldThreadStop() {
-        synchronized (this.stopLock) {
-            return this.shouldThreadStop;
-        }
+        return new Message(super.getProtocol(), new String(messageBuffer, "UTF8"));
     }
 }
