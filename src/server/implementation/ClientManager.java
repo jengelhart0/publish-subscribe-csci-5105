@@ -6,6 +6,7 @@ import shared.Message;
 
 import java.net.DatagramPacket;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,8 +18,8 @@ public class ClientManager implements CommunicationManager {
     private String clientIp;
     private int clientPort;
 
-    private Set<Message> subscriptions;
-    private Set<Message> publications;
+    private List<Message> subscriptions;
+    private List<Message> publications;
 
     public ClientManager(String clientIp, int clientPort) {
         this.clientIp = clientIp;

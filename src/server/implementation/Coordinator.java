@@ -155,7 +155,7 @@ public class Coordinator implements Communicate {
     public boolean Publish(String Article, String IP, int Port) throws RemoteException {
 
         ClientManager test = new ClientManager(IP, Port);
-        Message newMessage = new Message(this.protocol, Article);
+        Message newMessage = new Message(this.protocol, Article, false);
 
         this.clientTaskExecutor.execute(test.task(newMessage, CommunicationManager.Call.PUBLISH));
         return false;

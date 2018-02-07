@@ -1,53 +1,53 @@
 package shared;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class Message {
-    private int MESSAGESIZE = 120;
 
-    private String creatorIp;
-    private String creatorPort;
+//    private String creatorIp;
+//    private String creatorPort;
 
     private Protocol protocol;
     private String asRawMessage;
     private Map<String, String> query;
+    private boolean isSubscription;
 
 
-    public Message(Protocol protocol, String rawMessage, String creatorIp, String creatorPort) {
+    public Message(Protocol protocol, String rawMessage, boolean isSubscription) {
         // TODO: validate message/handle exceptions
 
         this.protocol = protocol;
 
-        if (!validate()) {
+        if (!validate(isSubscription)) {
             throw new IllegalArgumentException();
         }
 
         this.asRawMessage = rawMessage;
-        this.creatorIp = creatorIp;
-        this.creatorPort = creatorPort;
+        this.isSubscription = isSubscription;
+        setQuery();
 
-        generateQuery();
+//        this.creatorIp = creatorIp;
+//        this.creatorPort = creatorPort;
     }
+//
+//    public Message(Protocol protocol, String rawMessage) {
+//        this(protocol, rawMessage, null, null);
+//    }
 
-    public Message(Protocol protocol, String rawMessage) {
-        this(protocol, rawMessage, null, null);
-    }
-
-    public boolean validate() {
-        return this.protocol.validate(this.asRawMessage);
+    public boolean validate(boolean isSubscription) {
+        return protocol.validate(asRawMessage, isSubscription);
     }
 
     public String asRawMessage() {
-        return this.asRawMessage;
+        return asRawMessage;
     }
 
-    public void generateQuery() {
-
+    public void setQuery() {
+        this.query = protocol.generateQuery(asRawMessage);
     }
 
     public Protocol getProtocol() {
-        return this.protocol;
+        return protocol;
     }
 
     public String getContents() {
