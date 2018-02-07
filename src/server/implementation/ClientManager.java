@@ -18,8 +18,8 @@ public class ClientManager implements CommunicationManager {
     private String clientIp;
     private int clientPort;
 
-    private List<Message> subscriptions;
-    private List<Message> publications;
+    private Set<Message> subscriptions;
+    private Set<Message> publications;
 
     public ClientManager(String clientIp, int clientPort) {
         this.clientIp = clientIp;
@@ -29,7 +29,7 @@ public class ClientManager implements CommunicationManager {
         this.publications = new HashSet<>();
     }
 
-    Runnable task (Message message, CommunicationManager.Call call) {
+    public Runnable task(Message message, CommunicationManager.Call call) {
         switch(call) {
             case SUBSCRIBE:
                 return () -> subscribe(message);
@@ -83,6 +83,9 @@ public class ClientManager implements CommunicationManager {
     private DatagramPacket createMessagePacket(Message message) {
         String rawMessage = message.asRawMessage();
 
+        //TODO:implement
+
+        return null;
     }
 
     private boolean sendMessage(DatagramPacket messagePacket) {

@@ -76,4 +76,8 @@ public class Protocol {
         }
         return nonEmptyValueExists;
     }
+
+    public String getDelimiter() {
+        return this.delimiter;
+    }
 }

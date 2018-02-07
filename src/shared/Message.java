@@ -57,5 +57,4 @@ public class Message {
     public boolean isHeartbeat() {
         return false;
     }
-
 }

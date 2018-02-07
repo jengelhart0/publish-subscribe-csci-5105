@@ -60,6 +60,6 @@ public class ClientListener extends Listener {
                 new ByteArrayInputStream(packetToReceive.getData()))) {
             inputStream.read(messageBuffer);
         }
-        return new Message(super.getProtocol(), new String(messageBuffer, "UTF8"));
+        return new Message(super.getProtocol(), new String(messageBuffer, "UTF8"), false);
     }
 }
