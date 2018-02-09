@@ -41,31 +41,31 @@ public class Query {
         return this;
     }
 
-    void refreshAccessOffsets() {
+    public void refreshAccessOffsets() {
         for(ImmutablePair<String, String> fieldValuePair: query.keySet()) {
             setNextAccessOffsetFor(fieldValuePair, 0);
         }
     }
 
-    Set<ImmutablePair<String, String>> getConditions() {
+    public Set<ImmutablePair<String, String>> getConditions() {
         return query.keySet();
     }
 
-    int getNextAccessOffsetFor(ImmutablePair<String, String> fieldValuePair) {
+    public int getNextAccessOffsetFor(ImmutablePair<String, String> fieldValuePair) {
         return query.get(fieldValuePair);
     }
 
-    void setNextAccessOffsetFor(ImmutablePair<String, String> fieldValuePair, Integer offset) {
+    public void setNextAccessOffsetFor(ImmutablePair<String, String> fieldValuePair, Integer offset) {
         query.put(fieldValuePair, offset);
     }
 
-    Date getLastAccess() {
+    public Date getLastAccess() {
         synchronized (lastAccessLock) {
             return lastAccess;
         }
     }
 
-    void setLastAccess(Date lastAccess) {
+    public void setLastAccess(Date lastAccess) {
         synchronized (lastAccessLock) {
             this.lastAccess = lastAccess;
         }

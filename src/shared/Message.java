@@ -1,7 +1,11 @@
 package shared;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import server.implementation.Query;
 import server.implementation.TripleKeyValueStore;
+
+import java.util.Date;
+import java.util.Set;
 
 public class Message {
 
@@ -46,41 +50,41 @@ public class Message {
         return asRawMessage;
     }
 
-    void setQuery() {
+    private void setQuery() {
         this.query = TripleKeyValueStore.getInstance().generateQuery(this, this.protocol);
     }
 
-    public Query getQuery() {
-        return this.query;
+    public Set<ImmutablePair<String,String>> getQueryConditions() {
+        return this.query.getConditions();
     }
 
     public Protocol getProtocol() {
         return protocol;
     }
 
-//    public int getNextOffsetFor(String field) {
-//        return this.storeAccesses.getNextOffsetFor(field);
-//    }
-//
-//    public void setNextOffsetFor(String field, int offset) {
-//        this.storeAccesses.setNextOffsetFor(field, offset);
-//    }
-//
-//    public Date getLastAccess() {
-//        return this.storeAccesses.getLastAccess();
-//    }
-//
-//    public void setLastAccess(Date current) {
-//        this.storeAccesses.setLastAccess(current);
-//    }
+    public int getNextAccessOffsetFor(ImmutablePair<String, String> condition) {
+        return this.query.getNextAccessOffsetFor(condition);
+    }
+
+    public void setNextAccessOffsetFor(ImmutablePair<String, String> condition, int offset) {
+        this.query.setNextAccessOffsetFor(condition, offset);
+    }
+
+    public Date getLastAccess() {
+        return this.query.getLastAccess();
+    }
+
+    public void setLastAccess(Date current) {
+        this.query.setLastAccess(current);
+    }
 
     public boolean isSubscription() {
         return isSubscription;
     }
 
-//    public void refreshStoreAccessOffsets() {
-//        this.storeAccesses.refreshOffsets();
-//    }
+    public void refreshAccessOffsets() {
+        this.query.refreshAccessOffsets();
+    }
 
     public String getContents() {
         return "";

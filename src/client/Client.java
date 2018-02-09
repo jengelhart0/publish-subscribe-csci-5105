@@ -6,7 +6,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
-import java.util.Set;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -171,7 +171,7 @@ public class Client implements Runnable {
         this.listener.tellThreadToStop();
     }
 
-    Set<Message> getCurrentMessageFeed()
+    List<Message> getCurrentMessageFeed()
             throws IllegalThreadStateException {
 
         if(this.listenerThread == null || !this.listenerThread.isAlive()) {

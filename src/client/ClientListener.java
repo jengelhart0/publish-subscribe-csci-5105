@@ -8,10 +8,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,15 +16,15 @@ public class ClientListener extends Listener {
     private static final Logger LOGGER = Logger.getLogger( ClientListener.class.getName() );
 
     // TODO: NEED TO EXAMINE WHETHER THERE ARE BETTER SYNCH OPTIONS
-    private Set<Message> messageFeed;
+    private List<Message> messageFeed;
 
     ClientListener(Protocol protocol) {
         super(protocol);
-        this.messageFeed = Collections.synchronizedSet(new HashSet<>());
+        this.messageFeed = Collections.synchronizedList(new LinkedList<>());
     }
 
-    Set<Message> getCurrentMessageFeed() {
-        Set<Message> feedCopy = Collections.synchronizedSet(new HashSet<>());
+    List<Message> getCurrentMessageFeed() {
+        List<Message> feedCopy = Collections.synchronizedList(new LinkedList<>());
         feedCopy.addAll(this.messageFeed);
         return feedCopy;
     }

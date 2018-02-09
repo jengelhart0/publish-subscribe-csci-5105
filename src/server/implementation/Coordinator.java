@@ -16,6 +16,7 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -93,6 +94,8 @@ public class Coordinator implements Communicate {
 
         this.maxClients = maxClients;
         this.numClients = 0;
+
+        this.clientToClientManager = new ConcurrentHashMap<>();
 
         this.ip = InetAddress.getLocalHost();
         this.heartbeatPort = heartbeatPort;
@@ -208,6 +211,7 @@ public class Coordinator implements Communicate {
             synchronized (numClientsLock) {
                 numClients--;
             }
+            removed.clientLeft();
         }
         return true;
     }

@@ -30,22 +30,20 @@ public class TripleKeyValueStore implements MessageStore {
             throw new IllegalArgumentException("Store retrieve() received non-subscription message.");
         }
 
-        Query query = subscription.getQuery();
-
-        freshenOffsetsIfNecessary(query);
-        query.setLastAccess(new Date());
+        freshenOffsetsIfNecessary(subscription);
+        subscription.setLastAccess(new Date());
 
         Set<String> matchedMessages = null;
         Set<String> candidates;
 
-        Set<ImmutablePair<String, String>> conditions = query.getConditions();
+        Set<ImmutablePair<String, String>> conditions = subscription.getQueryConditions();
 
         for(ImmutablePair<String, String> condition: conditions) {
-            int nextOffset = query.getNextAccessOffsetFor(condition);
+            int nextOffset = subscription.getNextAccessOffsetFor(condition);
             candidates = store.get(condition)
                     .getMessagesStartingAt(nextOffset);
 
-            query.setNextAccessOffsetFor(condition, nextOffset + candidates.size());
+            subscription.setNextAccessOffsetFor(condition, nextOffset + candidates.size());
 
             if (matchedMessages != null) {
                 matchedMessages.retainAll(candidates);
@@ -56,22 +54,21 @@ public class TripleKeyValueStore implements MessageStore {
         return matchedMessages;
     }
 
-    private void freshenOffsetsIfNecessary(Query query) {
-        if (query.getLastAccess().compareTo(lastStoreFlush) < 0) {
-            query.refreshAccessOffsets();
+    private void freshenOffsetsIfNecessary(Message subscription) {
+        if (subscription.getLastAccess().compareTo(lastStoreFlush) < 0) {
+            subscription.refreshAccessOffsets();
         }
     }
 
     @Override
     public boolean publish(Message message) {
-        Query query = message.getQuery();
-        query.setLastAccess(new Date());
-        Set<ImmutablePair<String, String>> conditions = query.getConditions();
+        message.setLastAccess(new Date());
+        Set<ImmutablePair<String, String>> conditions = message.getQueryConditions();
 
         for (ImmutablePair<String, String> condition : conditions) {
             MessageList listToAddMessageTo = store.get(condition);
             Integer messageIdx = listToAddMessageTo.synchronizedAdd(message.asRawMessage());
-            query.setNextAccessOffsetFor(condition, messageIdx);
+            message.setNextAccessOffsetFor(condition, messageIdx);
         }
         return true;
     }

@@ -5,29 +5,35 @@ import server.api.MessageStore;
 import shared.Message;
 
 import java.net.DatagramPacket;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ClientManager implements CommunicationManager {
     private static final Logger LOGGER = Logger.getLogger( ClientManager.class.getName() );
 
-
     private String clientIp;
     private int clientPort;
 
-    private Set<Message> subscriptions;
-    private Set<Message> publications;
+    private boolean clientLeft;
+
+    private List<Message> subscriptions;
+    private List<Message> publications;
+
+    private final Object subscriptionLock = new Object();
+    private final Object publicationLock = new Object();
 
     private static final MessageStore store = TripleKeyValueStore.getInstance();
 
-    public ClientManager(String clientIp, int clientPort) {
+    ClientManager(String clientIp, int clientPort) {
         this.clientIp = clientIp;
         this.clientPort = clientPort;
 
-        this.subscriptions = new HashSet<>();
-        this.publications = new HashSet<>();
+        this.clientLeft = false;
+
+        this.subscriptions = Collections.synchronizedList(new LinkedList<>());
+        this.publications = Collections.synchronizedList(new ArrayList<>());
 
     }
 
@@ -48,7 +54,7 @@ public class ClientManager implements CommunicationManager {
 
     @Override
     public void subscribe(Message message) {
-
+        this.subscriptions.add(message);
     }
 
     @Override
@@ -58,14 +64,18 @@ public class ClientManager implements CommunicationManager {
 
     @Override
     public void publish(Message message) {
+        this.publications.add(message);
         store.publish(message);
     }
 
     // TODO: Gracefully just return if client has called Leave() (could happen if a pull task is still on executor after Leave()).
-    // TODO: Go ahead an let any other task just finish up in such a circumstance.
+    // TODO: Go ahead and let any other task just finish up in such a circumstance.
 
     @Override
     public void pullSubscriptionMatches() {
+        if(!clientLeft) {
+
+        }
     }
 
     private boolean createAndSendMessage(Message message) {
@@ -93,4 +103,7 @@ public class ClientManager implements CommunicationManager {
         return false;
     }
 
+    public void clientLeft() {
+        this.clientLeft = true;
+    }
 }
