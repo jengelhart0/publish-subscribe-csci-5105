@@ -1,7 +1,7 @@
 package shared;
 
-import java.util.Date;
-import java.util.Map;
+import server.implementation.Query;
+import server.implementation.TripleKeyValueStore;
 
 public class Message {
 
@@ -10,10 +10,8 @@ public class Message {
 
     private Protocol protocol;
     private String asRawMessage;
-    private Map<String, String> query;
+    private Query query;
     private boolean isSubscription;
-    private StoreAccesses storeAccesses = null;
-
 
     public Message(Protocol protocol, String rawMessage, boolean isSubscription) {
         // TODO: validate message/handle exceptions
@@ -28,9 +26,9 @@ public class Message {
         this.isSubscription = isSubscription;
         setQuery();
 
-        if(isSubscription) {
-            this.storeAccesses = new StoreAccesses(protocol);
-        }
+//        if(isSubscription) {
+//            this.storeAccesses = new StoreAccesses(protocol);
+//        }
 
 //        this.creatorIp = creatorIp;
 //        this.creatorPort = creatorPort;
@@ -40,7 +38,7 @@ public class Message {
 //        this(protocol, rawMessage, null, null);
 //    }
 
-    public boolean validate(boolean isSubscription) {
+    private boolean validate(boolean isSubscription) {
         return protocol.validate(asRawMessage, isSubscription);
     }
 
@@ -48,11 +46,11 @@ public class Message {
         return asRawMessage;
     }
 
-    public void setQuery() {
-        this.query = protocol.generateQuery(asRawMessage);
+    void setQuery() {
+        this.query = TripleKeyValueStore.getInstance().generateQuery(this, this.protocol);
     }
 
-    public Map<String, String> getQuery() {
+    public Query getQuery() {
         return this.query;
     }
 
@@ -60,31 +58,29 @@ public class Message {
         return protocol;
     }
 
-    public int getLastOffsetFor(String field) {
-        return this.storeAccesses.getLastOffsetFor(field);
-    }
-
-    public void setLastOffsetFor(String field, int offset) {
-        this.storeAccesses.setLastOffsetFor(field, offset);
-    }
-
-    public Date getLastAccess() {
-        return this.storeAccesses.getLastAccess();
-    }
-
-    public void setLastAccess(Date current) {
-        this.storeAccesses.setLastAccess(current);
-    }
+//    public int getNextOffsetFor(String field) {
+//        return this.storeAccesses.getNextOffsetFor(field);
+//    }
+//
+//    public void setNextOffsetFor(String field, int offset) {
+//        this.storeAccesses.setNextOffsetFor(field, offset);
+//    }
+//
+//    public Date getLastAccess() {
+//        return this.storeAccesses.getLastAccess();
+//    }
+//
+//    public void setLastAccess(Date current) {
+//        this.storeAccesses.setLastAccess(current);
+//    }
 
     public boolean isSubscription() {
         return isSubscription;
     }
 
-    public void refreshOffsets() {
-        for (String field : this.protocol.getSubscriptionFields()) {
-            this.storeAccesses.setLastOffsetFor(field, 0);
-        }
-    }
+//    public void refreshStoreAccessOffsets() {
+//        this.storeAccesses.refreshOffsets();
+//    }
 
     public String getContents() {
         return "";

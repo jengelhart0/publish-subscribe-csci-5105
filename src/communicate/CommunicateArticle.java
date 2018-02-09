@@ -18,5 +18,6 @@ public interface CommunicateArticle extends Communicate {
     Protocol ARTICLE_PROTOCOL = new Protocol(
             new String[]{"type", "orginator", "org"},
             ";",
+            "",
             120);
 }

@@ -1,39 +1,23 @@
 package shared;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 public class Protocol {
     // It is understood that all messages have data/payload fields,
-    // so we only indicate others (i.e., the subscription fields).
-    private String[] subscriptionFields;
+    // so we only indicate others (i.e., the query fields).
+    private String[] queryFields;
     private String delimiter;
+    private String wildcard;
     private int messageSize;
 
-    public Protocol(String[] fields, String delimiter, int messageSize) {
-        this.subscriptionFields = fields;
+    public Protocol(String[] fields, String delimiter, String wildcard, int messageSize) {
+        this.queryFields = fields;
         this.delimiter = delimiter;
         this.messageSize = messageSize;
+        this.wildcard = wildcard;
     }
 
-    public Map<String, String> generateQuery(String message) {
-        //TODO: need to validate first, or okay to let caller worry?
-        String[] parsedValues = parse(message);
-        String[] messageFields = this.subscriptionFields;
-
-        Map<String, String> query = new HashMap<>();
-
-        int i;
-        int numFields = messageFields.length;
-
-        for (i = 0; i < numFields; i++) {
-            query.put(messageFields[i], parsedValues[i]);
-        }
-        return query;
-    }
-
-    private String[] parse(String message) {
+    public String[] parse(String message) {
         return message.split(this.delimiter);
     }
 
@@ -41,8 +25,16 @@ public class Protocol {
         return this.messageSize;
     }
 
-    public String[] getSubscriptionFields() {
-        return subscriptionFields;
+    public String getDelimiter() {
+        return this.delimiter;
+    }
+
+    public String getWildcard() {
+        return wildcard;
+    }
+
+    public String[] getQueryFields() {
+        return queryFields;
     }
 
     public boolean validate(String message, boolean isSubscription) {
@@ -51,7 +43,7 @@ public class Protocol {
         }
         String[] parsedMessage = parse(message);
         boolean lastFieldEmpty = Pattern.matches(
-                "^\\s+$", parsedMessage[messageSize - 1]);
+                "^" + this.wildcard + "\\s*$", parsedMessage[messageSize - 1]);
 
         if(isSubscription) {
             return lastFieldEmpty;
@@ -66,22 +58,18 @@ public class Protocol {
 
         String[] parsedValues = parse(message);
         int valuesLength = parsedValues.length;
-        if(valuesLength != subscriptionFields.length + 1) {
+        if(valuesLength != queryFields.length + 1) {
             return false;
         }
 
-        boolean nonEmptyValueExists = false;
+        boolean nonWildcardValueExists = false;
         int i = 0;
-        while(!nonEmptyValueExists && i < valuesLength) {
-            if (!(parsedValues[i].equals(""))) {
-                nonEmptyValueExists = true;
+        while(!nonWildcardValueExists && i < valuesLength) {
+            if (!(parsedValues[i].equals(this.wildcard))) {
+                nonWildcardValueExists = true;
             }
             i++;
         }
-        return nonEmptyValueExists;
-    }
-
-    public String getDelimiter() {
-        return this.delimiter;
+        return nonWildcardValueExists;
     }
 }

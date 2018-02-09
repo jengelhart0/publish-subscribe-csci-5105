@@ -4,6 +4,7 @@ import server.api.MessageStore;
 import shared.Message;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import shared.Protocol;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,36 +30,59 @@ public class TripleKeyValueStore implements MessageStore {
             throw new IllegalArgumentException("Store retrieve() received non-subscription message.");
         }
 
-        freshenOffsetsIfNecessary(subscription);
+        Query query = subscription.getQuery();
 
-        Map<String, String> query = subscription.getQuery();
-        freshenOffsetsIfNecessary(subscription);
+        freshenOffsetsIfNecessary(query);
+        query.setLastAccess(new Date());
 
         Set<String> matchedMessages = null;
         Set<String> candidates;
-        for(String field: query.keySet()) {
-            int lastOffset = subscription.getLastOffsetFor(field);
-            candidates = store.get( new ImmutablePair<>(field, query.get(field)) )
-                    .getMessagesStartingAt(lastOffset);
 
-            if (matchedMessages == null) {
-                matchedMessages = candidates;
-            } else {
+        Set<ImmutablePair<String, String>> conditions = query.getConditions();
+
+        for(ImmutablePair<String, String> condition: conditions) {
+            int nextOffset = query.getNextAccessOffsetFor(condition);
+            candidates = store.get(condition)
+                    .getMessagesStartingAt(nextOffset);
+
+            query.setNextAccessOffsetFor(condition, nextOffset + candidates.size());
+
+            if (matchedMessages != null) {
                 matchedMessages.retainAll(candidates);
+            } else {
+                matchedMessages = candidates;
             }
         }
         return matchedMessages;
     }
 
-    private void freshenOffsetsIfNecessary(Message subscription) {
-        if (subscription.getLastAccess().compareTo(lastStoreFlush) < 0) {
-            subscription.refreshOffsets();
+    private void freshenOffsetsIfNecessary(Query query) {
+        if (query.getLastAccess().compareTo(lastStoreFlush) < 0) {
+            query.refreshAccessOffsets();
         }
     }
 
     @Override
     public boolean publish(Message message) {
+        Query query = message.getQuery();
+        query.setLastAccess(new Date());
+        Set<ImmutablePair<String, String>> conditions = query.getConditions();
 
-        return false;
+        for (ImmutablePair<String, String> condition : conditions) {
+            MessageList listToAddMessageTo = store.get(condition);
+            Integer messageIdx = listToAddMessageTo.synchronizedAdd(message.asRawMessage());
+            query.setNextAccessOffsetFor(condition, messageIdx);
+        }
+        return true;
+    }
+
+    @Override
+    public Query generateQuery(Message message, Protocol protocol) {
+        return new Query(protocol.getQueryFields(),
+                protocol.parse(message.asRawMessage()),
+                protocol.getWildcard(),
+                message.isSubscription())
+
+                .generate();
     }
 }

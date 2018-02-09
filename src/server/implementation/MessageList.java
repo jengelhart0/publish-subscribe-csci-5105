@@ -26,9 +26,10 @@ class MessageList {
         }
     }
 
-    void add(String message) {
+    Integer synchronizedAdd(String message) {
         synchronized (listLock) {
             this.messages.add(message);
+            return this.messages.size() - 1;
         }
     }
 
