@@ -1,12 +1,11 @@
 package server.implementation;
 
 import server.api.CommunicationManager;
-import shared.Protocol;
+import server.api.MessageStore;
 import shared.Message;
 
 import java.net.DatagramPacket;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,12 +20,15 @@ public class ClientManager implements CommunicationManager {
     private Set<Message> subscriptions;
     private Set<Message> publications;
 
+    private static final MessageStore store = TripleKeyValueStore.getInstance();
+
     public ClientManager(String clientIp, int clientPort) {
         this.clientIp = clientIp;
         this.clientPort = clientPort;
 
         this.subscriptions = new HashSet<>();
         this.publications = new HashSet<>();
+
     }
 
     public Runnable task(Message message, CommunicationManager.Call call) {
@@ -45,26 +47,25 @@ public class ClientManager implements CommunicationManager {
     }
 
     @Override
-    public boolean subscribe(Message message) {
-        return false;
+    public void subscribe(Message message) {
+
     }
 
     @Override
-    public boolean unsubscribe(Message message) {
-        return false;
+    public void unsubscribe(Message message) {
+
     }
 
     @Override
-    public boolean publish(Message message) {
-        return false;
+    public void publish(Message message) {
+        store.publish(message);
     }
 
     // TODO: Gracefully just return if client has called Leave() (could happen if a pull task is still on executor after Leave()).
     // TODO: Go ahead an let any other task just finish up in such a circumstance.
 
     @Override
-    public boolean pullSubscriptionMatches() {
-        return false;
+    public void pullSubscriptionMatches() {
     }
 
     private boolean createAndSendMessage(Message message) {

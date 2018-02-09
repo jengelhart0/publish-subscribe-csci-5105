@@ -1,7 +1,6 @@
 package server.api;
 
 import shared.Message;
-import shared.Protocol;
 
 public interface CommunicationManager {
 
@@ -10,8 +9,8 @@ public interface CommunicationManager {
     }
 
     Runnable task(Message message, Call call);
-    boolean subscribe(Message message);
-    boolean unsubscribe(Message message);
-    boolean publish(Message message);
-    boolean pullSubscriptionMatches();
+    void subscribe(Message message);
+    void unsubscribe(Message message);
+    void publish(Message message);
+    void pullSubscriptionMatches();
 }

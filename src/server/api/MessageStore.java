@@ -1,11 +1,10 @@
 package server.api;
 
 import shared.Message;
-import shared.Protocol;
 
-import java.util.HashSet;
+import java.util.Set;
 
 public interface MessageStore {
-    HashSet<Protocol> match(Message message);
-    boolean store(Protocol messageProtocol);
+    Set<String> retrieve(Message subscription);
+    boolean publish(Message message);
 }

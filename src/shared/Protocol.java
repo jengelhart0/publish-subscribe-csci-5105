@@ -41,6 +41,10 @@ public class Protocol {
         return this.messageSize;
     }
 
+    public String[] getSubscriptionFields() {
+        return subscriptionFields;
+    }
+
     public boolean validate(String message, boolean isSubscription) {
         if (!isBasicallyValid(message)) {
             return false;
