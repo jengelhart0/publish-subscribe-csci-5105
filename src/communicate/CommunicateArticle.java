@@ -1,8 +1,6 @@
 package communicate;
 
-import shared.Protocol;
-
-import java.net.InetAddress;
+import Message.Protocol;
 
 public interface CommunicateArticle extends Communicate {
     String NAME = "CommunicateArticle";

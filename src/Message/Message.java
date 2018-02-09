@@ -1,4 +1,4 @@
-package shared;
+package Message;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import server.implementation.Query;
@@ -30,17 +30,7 @@ public class Message {
         this.isSubscription = isSubscription;
         setQuery();
 
-//        if(isSubscription) {
-//            this.storeAccesses = new StoreAccesses(protocol);
-//        }
-
-//        this.creatorIp = creatorIp;
-//        this.creatorPort = creatorPort;
     }
-//
-//    public Message(Protocol protocol, String rawMessage) {
-//        this(protocol, rawMessage, null, null);
-//    }
 
     private boolean validate(boolean isSubscription) {
         return protocol.validate(asRawMessage, isSubscription);
@@ -84,13 +74,5 @@ public class Message {
 
     public void refreshAccessOffsets() {
         this.query.refreshAccessOffsets();
-    }
-
-    public String getContents() {
-        return "";
-    }
-
-    public boolean isHeartbeat() {
-        return false;
     }
 }

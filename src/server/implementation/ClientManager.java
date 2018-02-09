@@ -2,13 +2,19 @@ package server.implementation;
 
 import server.api.CommunicationManager;
 import server.api.MessageStore;
-import shared.Message;
+import Message.Message;
+import Message.Protocol;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class ClientManager implements CommunicationManager {
     private static final Logger LOGGER = Logger.getLogger( ClientManager.class.getName() );
@@ -18,6 +24,8 @@ public class ClientManager implements CommunicationManager {
 
     private boolean clientLeft;
 
+    private Protocol protocol;
+
     private List<Message> subscriptions;
     private List<Message> publications;
 
@@ -26,15 +34,16 @@ public class ClientManager implements CommunicationManager {
 
     private static final MessageStore store = TripleKeyValueStore.getInstance();
 
-    ClientManager(String clientIp, int clientPort) {
+    ClientManager(String clientIp, int clientPort, Protocol protocol) {
         this.clientIp = clientIp;
         this.clientPort = clientPort;
 
         this.clientLeft = false;
 
-        this.subscriptions = Collections.synchronizedList(new LinkedList<>());
-        this.publications = Collections.synchronizedList(new ArrayList<>());
+        this.protocol = protocol;
 
+        this.subscriptions = new LinkedList<>();
+        this.publications = new ArrayList<>();
     }
 
     public Runnable task(Message message, CommunicationManager.Call call) {
@@ -46,7 +55,7 @@ public class ClientManager implements CommunicationManager {
             case UNSUBSCRIBE:
                 return () -> unsubscribe(message);
             case PULL_MATCHES:
-                return this::pullSubscriptionMatches;
+                return this::pullSubscriptionMatchesFromStore;
             default:
                 throw new IllegalArgumentException("Task call made to ClientManager not recognized.");
         }
@@ -54,17 +63,30 @@ public class ClientManager implements CommunicationManager {
 
     @Override
     public void subscribe(Message message) {
-        this.subscriptions.add(message);
+        synchronized (subscriptionLock) {
+            this.subscriptions.add(message);
+        }
     }
 
     @Override
-    public void unsubscribe(Message message) {
+    public void unsubscribe(Message unsubscription) {
+        String unsubscriptionString = unsubscription.asRawMessage();
 
+        synchronized (subscriptionLock) {
+            List<Message> afterUnsubscribe = subscriptions
+                    .stream()
+                    .filter(subscription -> !subscription.asRawMessage().equals(unsubscriptionString))
+                    .collect(Collectors.toList());
+
+            this.subscriptions = Collections.synchronizedList(afterUnsubscribe);
+        }
     }
 
     @Override
     public void publish(Message message) {
-        this.publications.add(message);
+        synchronized (publicationLock) {
+            this.publications.add(message);
+        }
         store.publish(message);
     }
 
@@ -72,38 +94,58 @@ public class ClientManager implements CommunicationManager {
     // TODO: Go ahead and let any other task just finish up in such a circumstance.
 
     @Override
-    public void pullSubscriptionMatches() {
+    public void pullSubscriptionMatchesFromStore() {
         if(!clientLeft) {
+            // Get all subscriptions into cheap container so we get out of synchronized block fast
+            // (as store.retrieve(...) is relatively intensive).
+            Message[] subscriptionsToMatch;
+            synchronized (subscriptionLock) {
+                subscriptionsToMatch = subscriptions.toArray(new Message[subscriptions.size()]);
+            }
 
+            Set<String> toDeliver = getSubscriptionMatches(subscriptionsToMatch);
+
+            int messageSize = this.protocol.getMessageSize();
+            try {
+                DatagramPacket deliveryPacket = new DatagramPacket(
+                        new byte[messageSize], messageSize, InetAddress.getByName(clientIp), clientPort);
+
+                deliverPublications(toDeliver, deliveryPacket, messageSize);
+            } catch (IOException e) {
+                LOGGER.log(Level.SEVERE, "Failed to send matched publications in ClientManager: " + e.toString());
+            }
         }
     }
 
-    private boolean createAndSendMessage(Message message) {
-        try {
-
-            DatagramPacket subscriptionDatagram = createMessagePacket(message);
-            sendMessage(subscriptionDatagram);
-
-        } catch (IllegalArgumentException ia) {
-            LOGGER.log(Level.SEVERE, ia.toString());
-            return false;
+    private Set<String> getSubscriptionMatches(Message[] subscriptionsToMatch) {
+        Set<String> toDeliver = new HashSet<>();
+        MessageStore store = TripleKeyValueStore.getInstance();
+        for(Message subscription: subscriptionsToMatch) {
+            toDeliver.addAll(store.retrieve(subscription));
         }
-        return true;
+        return toDeliver;
     }
 
-    private DatagramPacket createMessagePacket(Message message) {
-        String rawMessage = message.asRawMessage();
+    private void deliverPublications(Set<String> publicationsToDeliver,
+                                     DatagramPacket deliveryPacket, int messageSize) throws IOException {
 
-        //TODO:implement
-
-        return null;
+        try (DatagramSocket deliverySocket = new DatagramSocket();
+             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+             DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream))
+        {
+            for (String publication: publicationsToDeliver) {
+                if(publication.length() != messageSize) {
+                    throw new IllegalArgumentException(
+                            "ClientManager tried to deliver publication violating protocol: wrong messageSize");
+                }
+                dataOutputStream.writeChars(publication);
+                deliveryPacket.setData(byteArrayOutputStream.toByteArray());
+                deliverySocket.send(deliveryPacket);
+            }
+        }
     }
 
-    private boolean sendMessage(DatagramPacket messagePacket) {
-        return false;
-    }
-
-    public void clientLeft() {
+    public void informManagerThatClientLeft() {
         this.clientLeft = true;
     }
 }

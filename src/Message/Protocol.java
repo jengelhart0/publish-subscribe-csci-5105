@@ -1,4 +1,4 @@
-package shared;
+package Message;
 
 import java.util.regex.Pattern;
 

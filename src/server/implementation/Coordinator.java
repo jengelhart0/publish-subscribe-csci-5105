@@ -3,8 +3,8 @@ package server.implementation;
 import communicate.Communicate;
 import communicate.CommunicateArticle;
 import server.api.CommunicationManager;
-import shared.Message;
-import shared.Protocol;
+import Message.Message;
+import Message.Protocol;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -41,7 +41,6 @@ public class Coordinator implements Communicate {
 
     private Map<String, CommunicationManager> clientToClientManager;
 
-    private Thread heartbeatThread;
     private HeartbeatListener heartbeatListener;
     private int heartbeatPort;
 
@@ -53,14 +52,14 @@ public class Coordinator implements Communicate {
     private String deregisterMessage;
     private String getListMessage;
 
-    public static Coordinator getInstance() {
+    private static Coordinator getInstance() {
         return ourInstance;
     }
 
     private Coordinator() {
     }
 
-    void initialize(String name, int maxClients, Protocol protocol, int heartbeatPort,
+    private void initialize(String name, int maxClients, Protocol protocol, int heartbeatPort,
                     InetAddress registryServerIp, int registryServerPort, int serverListSize) {
         try {
             setCommunicationVariables(name, maxClients, protocol, heartbeatPort,
@@ -69,20 +68,21 @@ public class Coordinator implements Communicate {
             startHeartbeat();
             makeThisARemoteCommunicationServer();
             registerWithRegistryServer();
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Failed to get ip address for server on initialization");
-
+        } catch (IOException | RuntimeException e) {
+            LOGGER.log(Level.SEVERE, "Failed on server initialization: " + e.toString());
         } finally {
             cleanup();
         }
     }
 
     private void cleanup() {
-
-
-
-
-
+        try {
+            heartbeatListener.tellThreadToStop();
+            deregisterFromRegistryServer();
+            clientTaskExecutor.shutdown();
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "While cleaning up server: " + e.toString());
+        }
     }
 
     private void setCommunicationVariables(String name, int maxClients, Protocol protocol, int heartbeatPort,
@@ -114,10 +114,10 @@ public class Coordinator implements Communicate {
     private void startHeartbeat() throws IOException {
         this.heartbeatListener = new HeartbeatListener(this.protocol);
         this.heartbeatListener.listenAt(this.heartbeatPort, this.ip);
-        this.heartbeatThread = new Thread(this.heartbeatListener);
-        this.heartbeatThread.start();
+        Thread heartbeatThread = new Thread(this.heartbeatListener);
+        heartbeatThread.start();
 
-        if(!this.heartbeatThread.isAlive()) {
+        if(!heartbeatThread.isAlive()) {
             throw new RuntimeException();
         }
     }
@@ -126,6 +126,7 @@ public class Coordinator implements Communicate {
         if(System.getSecurityManager() == null) {
             System.setSecurityManager(new SecurityManager());
         }
+
         try {
             Communicate stub =
                     (Communicate) UnicastRemoteObject.exportObject(this, 0);
@@ -198,7 +199,7 @@ public class Coordinator implements Communicate {
             }
             numClients++;
         }
-        CommunicationManager newClientManager = new ClientManager(IP, Port);
+        CommunicationManager newClientManager = new ClientManager(IP, Port, this.protocol);
         clientToClientManager.put(getIpPortString(IP, Port), newClientManager);
         return true;
     }
@@ -211,7 +212,7 @@ public class Coordinator implements Communicate {
             synchronized (numClientsLock) {
                 numClients--;
             }
-            removed.clientLeft();
+            removed.informManagerThatClientLeft();
         }
         return true;
     }

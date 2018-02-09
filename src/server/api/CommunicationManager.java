@@ -1,6 +1,8 @@
 package server.api;
 
-import shared.Message;
+import Message.Message;
+
+import java.io.IOException;
 
 public interface CommunicationManager {
 
@@ -12,6 +14,6 @@ public interface CommunicationManager {
     void subscribe(Message message);
     void unsubscribe(Message message);
     void publish(Message message);
-    void pullSubscriptionMatches();
-    void clientLeft();
+    void pullSubscriptionMatchesFromStore() throws IOException;
+    void informManagerThatClientLeft();
 }

@@ -13,8 +13,8 @@ import java.util.logging.Logger;
 import communicate.Communicate;
 import communicate.CommunicateArticle;
 import communicate.Communicate.RemoteMessageCall;
-import shared.Message;
-import shared.Protocol;
+import Message.Message;
+import Message.Protocol;
 
 public class Client implements Runnable {
     private static final Logger LOGGER = Logger.getLogger( Client.class.getName() );
@@ -24,7 +24,6 @@ public class Client implements Runnable {
     private String remoteHost;
     private Protocol protocol;
 
-    private Thread listenerThread = null;
     private ClientListener listener = null;
 
     private InetAddress localAddress;
@@ -145,14 +144,12 @@ public class Client implements Runnable {
     private void startMessageListener() throws SocketException {
         this.listener = new ClientListener(this.protocol);
         this.listener.listenAt(this.listenPort, this.localAddress);
-        this.listenerThread = new Thread(this.listener);
-        this.listenerThread.start();
+        Thread listenerThread = new Thread(this.listener);
+        listenerThread.start();
 
-        if(!this.listenerThread.isAlive()) {
+        if(!listenerThread.isAlive()) {
             throw new RuntimeException();
         }
-
-
     }
 
     private void establishSecurityManager() {
@@ -171,12 +168,7 @@ public class Client implements Runnable {
         this.listener.tellThreadToStop();
     }
 
-    List<Message> getCurrentMessageFeed()
-            throws IllegalThreadStateException {
-
-        if(this.listenerThread == null || !this.listenerThread.isAlive()) {
-            throw new IllegalThreadStateException("Either Listener Thread null or not alive!");
-        }
+    List<Message> getCurrentMessageFeed() {
         return this.listener.getCurrentMessageFeed();
     }
 
@@ -189,5 +181,4 @@ public class Client implements Runnable {
 
         new Thread(testClient).start();
     }
-
 }

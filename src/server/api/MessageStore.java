@@ -1,8 +1,8 @@
 package server.api;
 
 import server.implementation.Query;
-import shared.Message;
-import shared.Protocol;
+import Message.Message;
+import Message.Protocol;
 
 import java.util.Set;
 

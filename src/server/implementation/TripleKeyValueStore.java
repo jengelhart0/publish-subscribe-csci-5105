@@ -1,10 +1,10 @@
 package server.implementation;
 
 import server.api.MessageStore;
-import shared.Message;
+import Message.Message;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import shared.Protocol;
+import Message.Protocol;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TripleKeyValueStore implements MessageStore {
     private static TripleKeyValueStore ourInstance = new TripleKeyValueStore();
 
-    private Map<ImmutablePair<String, String>, MessageList> store;
+    private Map<ImmutablePair<String, String>, PublicationList> store;
     private Date lastStoreFlush;
 
     public static TripleKeyValueStore getInstance() {
@@ -33,7 +33,7 @@ public class TripleKeyValueStore implements MessageStore {
         freshenOffsetsIfNecessary(subscription);
         subscription.setLastAccess(new Date());
 
-        Set<String> matchedMessages = null;
+        Set<String> matchedPublications = null;
         Set<String> candidates;
 
         Set<ImmutablePair<String, String>> conditions = subscription.getQueryConditions();
@@ -41,17 +41,17 @@ public class TripleKeyValueStore implements MessageStore {
         for(ImmutablePair<String, String> condition: conditions) {
             int nextOffset = subscription.getNextAccessOffsetFor(condition);
             candidates = store.get(condition)
-                    .getMessagesStartingAt(nextOffset);
+                    .getPublicationsStartingAt(nextOffset);
 
             subscription.setNextAccessOffsetFor(condition, nextOffset + candidates.size());
 
-            if (matchedMessages != null) {
-                matchedMessages.retainAll(candidates);
+            if (matchedPublications != null) {
+                matchedPublications.retainAll(candidates);
             } else {
-                matchedMessages = candidates;
+                matchedPublications = candidates;
             }
         }
-        return matchedMessages;
+        return matchedPublications;
     }
 
     private void freshenOffsetsIfNecessary(Message subscription) {
@@ -66,8 +66,8 @@ public class TripleKeyValueStore implements MessageStore {
         Set<ImmutablePair<String, String>> conditions = message.getQueryConditions();
 
         for (ImmutablePair<String, String> condition : conditions) {
-            MessageList listToAddMessageTo = store.get(condition);
-            Integer messageIdx = listToAddMessageTo.synchronizedAdd(message.asRawMessage());
+            PublicationList listToAddPublicationTo = store.get(condition);
+            Integer messageIdx = listToAddPublicationTo.synchronizedAdd(message.asRawMessage());
             message.setNextAccessOffsetFor(condition, messageIdx);
         }
         return true;
