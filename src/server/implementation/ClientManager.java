@@ -32,7 +32,7 @@ public class ClientManager implements CommunicationManager {
     private final Object subscriptionLock = new Object();
     private final Object publicationLock = new Object();
 
-    private static final MessageStore store = TripleKeyValueStore.getInstance();
+    private static final MessageStore store = PairedKeyMessageStore.getInstance();
 
     ClientManager(String clientIp, int clientPort, Protocol protocol) {
         this.clientIp = clientIp;
@@ -119,7 +119,7 @@ public class ClientManager implements CommunicationManager {
 
     private Set<String> getSubscriptionMatches(Message[] subscriptionsToMatch) {
         Set<String> toDeliver = new HashSet<>();
-        MessageStore store = TripleKeyValueStore.getInstance();
+        MessageStore store = PairedKeyMessageStore.getInstance();
         for(Message subscription: subscriptionsToMatch) {
             toDeliver.addAll(store.retrieve(subscription));
         }

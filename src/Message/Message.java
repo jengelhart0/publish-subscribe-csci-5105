@@ -2,7 +2,7 @@ package Message;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import server.implementation.Query;
-import server.implementation.TripleKeyValueStore;
+import server.implementation.PairedKeyMessageStore;
 
 import java.util.Date;
 import java.util.Set;
@@ -41,7 +41,7 @@ public class Message {
     }
 
     private void setQuery() {
-        this.query = TripleKeyValueStore.getInstance().generateQuery(this, this.protocol);
+        this.query = PairedKeyMessageStore.getInstance().generateQuery(this, this.protocol);
     }
 
     public Set<ImmutablePair<String,String>> getQueryConditions() {

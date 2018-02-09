@@ -9,17 +9,17 @@ import Message.Protocol;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TripleKeyValueStore implements MessageStore {
-    private static TripleKeyValueStore ourInstance = new TripleKeyValueStore();
+public class PairedKeyMessageStore implements MessageStore {
+    private static PairedKeyMessageStore ourInstance = new PairedKeyMessageStore();
 
     private Map<ImmutablePair<String, String>, PublicationList> store;
     private Date lastStoreFlush;
 
-    public static TripleKeyValueStore getInstance() {
+    public static PairedKeyMessageStore getInstance() {
         return ourInstance;
     }
 
-    private TripleKeyValueStore() {
+    private PairedKeyMessageStore() {
         this.store = new ConcurrentHashMap<>();
         this.lastStoreFlush = new Date();
     }
