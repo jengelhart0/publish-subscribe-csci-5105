@@ -11,7 +11,8 @@ public interface CommunicateArticle extends Communicate {
 
     String REGISTRY_SERVER_IP = "dio.cs.umn.edu";
     int REGISTRY_SERVER_PORT = 5105;
-    int HEARTBEAT_PORT = 8888;
+    int HEARTBEAT_PORT = 8889;
+    int REMOTE_OBJECT_PORT = 0;
 
     Protocol ARTICLE_PROTOCOL = new Protocol(
             new String[]{"type", "orginator", "org"},
