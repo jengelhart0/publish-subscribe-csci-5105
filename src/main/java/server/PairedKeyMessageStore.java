@@ -66,6 +66,10 @@ public class PairedKeyMessageStore implements MessageStore {
 
         for (ImmutablePair<String, String> condition : conditions) {
             PublicationList listToAddPublicationTo = store.get(condition);
+            if(listToAddPublicationTo == null) {
+                listToAddPublicationTo = new PublicationList();
+                store.put(condition, listToAddPublicationTo);
+            }
             Integer messageIdx = listToAddPublicationTo.synchronizedAdd(message.asRawMessage());
             message.setNextAccessOffsetFor(condition, messageIdx);
         }

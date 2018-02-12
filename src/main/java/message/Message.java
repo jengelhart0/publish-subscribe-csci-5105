@@ -19,6 +19,16 @@ public class Message {
 
         this.protocol = protocol;
 
+        int messageSize = protocol.getMessageSize();
+        if(rawMessage.length() < messageSize) {
+            StringBuilder padder = new StringBuilder(rawMessage);
+            while (padder.length() < messageSize) {
+                padder.append(" ");
+            }
+            this.asRawMessage = padder.toString();
+            System.out.println(this.asRawMessage + " length: " + this.asRawMessage.length());
+        }
+
         if (!validate(isSubscription)) {
             throw new IllegalArgumentException();
         }

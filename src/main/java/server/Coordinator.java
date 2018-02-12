@@ -71,6 +71,7 @@ public class Coordinator implements Communicate {
             makeThisARemoteCommunicationServer();
         } catch (IOException | RuntimeException e) {
             LOGGER.log(Level.SEVERE, "Failed on server initialization: " + e.toString());
+            e.printStackTrace();
             cleanup();
         }
         LOGGER.log(Level.INFO, "Finished initializing remote server.");
@@ -83,6 +84,7 @@ public class Coordinator implements Communicate {
             clientTaskExecutor.shutdown();
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "While cleaning up server: " + e.toString());
+            e.printStackTrace();
         }
     }
 
@@ -133,15 +135,21 @@ public class Coordinator implements Communicate {
         LOGGER.log(Level.SEVERE, "Port " + Integer.toString(this.rmiPort));
 
         try {
-            System.setProperty("java.rmi.server.hostname", this.ip.getHostAddress());
+//            System.setProperty("java.rmi.server.hostname", this.ip.getHostAddress());
+            System.setProperty("java.rmi.server.hostname", "127.0.0.1");
+
+//            Communicate stub =
+//                    (Communicate) UnicastRemoteObject.exportObject(this, this.rmiPort);
             Communicate stub =
-                    (Communicate) UnicastRemoteObject.exportObject(this, this.rmiPort);
+                    (Communicate) UnicastRemoteObject.exportObject(this, 0);
 //            Registry registry = LocateRegistry.getRegistry(ip.getHostAddress());
             Registry registry = LocateRegistry.createRegistry(this.rmiPort);
+//            Registry registry = LocateRegistry.getRegistry();
             registry.rebind(this.name, stub);
             LOGGER.log(Level.INFO, "Coordinator bound");
         } catch (RemoteException re) {
             LOGGER.log(Level.SEVERE, re.toString());
+            re.printStackTrace();
         }
     }
 
@@ -285,6 +293,7 @@ public class Coordinator implements Communicate {
             return new Message(this.protocol, rawMessage, isSubscription);
         } catch (IllegalArgumentException e) {
             LOGGER.log(Level.WARNING, "Invalid message received from");
+            e.printStackTrace();
             return null;
         }
     }

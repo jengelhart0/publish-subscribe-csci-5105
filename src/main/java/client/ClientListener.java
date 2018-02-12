@@ -45,6 +45,7 @@ public class ClientListener extends Listener {
             }
         } catch (IOException | IllegalArgumentException e) {
             LOGGER.log(Level.WARNING, "ClientListener failed to receive incoming message: " + e.toString());
+            e.printStackTrace();
         } finally {
             super.closeListenSocket();
         }

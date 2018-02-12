@@ -43,7 +43,7 @@ public class Protocol {
         }
         String[] parsedMessage = parse(message);
         boolean lastFieldEmpty = Pattern.matches(
-                "^" + this.wildcard + "\\s*$", parsedMessage[messageSize - 1]);
+                "^" + this.wildcard + "\\s*$", parsedMessage[parsedMessage.length - 1]);
 
         if(isSubscription) {
             return lastFieldEmpty;

@@ -1,5 +1,6 @@
 package client;
 
+import java.io.IOException;
 import java.net.*;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -22,6 +23,7 @@ public class Client implements Runnable {
     private Communicate communicate = null;
     private String communicateName;
     private String remoteHost;
+    private int remoteServerPort;
     private Protocol protocol;
 
     private ClientListener listener = null;
@@ -29,13 +31,16 @@ public class Client implements Runnable {
     private InetAddress localAddress;
     private int listenPort;
 
-    public Client (String remoteHost, String communicateName, Protocol protocol,
-                   int listenPort) throws UnknownHostException {
+    public Client (String remoteHost, int remoteServerPort, String communicateName, Protocol protocol,
+                   int listenPort) throws IOException, NotBoundException {
         this.remoteHost = remoteHost;
+        this.remoteServerPort = remoteServerPort;
         this.communicateName = communicateName;
         this.protocol = protocol;
         this.localAddress = InetAddress.getLocalHost();
         this.listenPort = listenPort;
+
+        initializeRemoteCommunication();
     }
 
     public boolean join() {
@@ -122,13 +127,13 @@ public class Client implements Runnable {
     @Override
     public void run() {
         try {
-            initializeRemoteCommunication();
             while(true) {
                 ping();
                 Thread.sleep(10000);
             }
-        } catch (RemoteException | NotBoundException | InterruptedException | SocketException e) {
+        } catch (RemoteException | InterruptedException e) {
             LOGGER.log(Level.SEVERE, e.toString());
+            e.printStackTrace();
             cleanup();
         }
     }
@@ -158,7 +163,8 @@ public class Client implements Runnable {
 //    }
 
     private void establishRemoteObject() throws RemoteException, NotBoundException {
-        Registry registry = LocateRegistry.getRegistry(this.remoteHost);
+//        Registry registry = LocateRegistry.getRegistry(this.remoteHost, this.remoteServerPort);
+        Registry registry = LocateRegistry.getRegistry("127.0.0.1");
         this.communicate = (Communicate) registry.lookup(this.communicateName);
     }
 
@@ -171,7 +177,7 @@ public class Client implements Runnable {
         return this.listener.getCurrentMessageFeed();
     }
 
-    public static void main(String[] args) throws UnknownHostException {
+    public static void main(String[] args) throws IOException, NotBoundException {
 
         if (!(args.length == 1)) {
             LOGGER.log(Level.SEVERE, "Need to pass single argument IPv4 address of server.");
@@ -182,10 +188,19 @@ public class Client implements Runnable {
         LOGGER.log(Level.INFO, remoteServerIp);
         Client testClient = new Client(
                 remoteServerIp,
+                CommunicateArticle.REMOTE_OBJECT_PORT,
                 Communicate.NAME,
                 CommunicateArticle.ARTICLE_PROTOCOL,
                 8888);
 
         new Thread(testClient).start();
+        Protocol testProtocol = CommunicateArticle.ARTICLE_PROTOCOL;
+        Message testSubscribe = new Message(testProtocol, "Science;Someone;UMN;", true);
+        testClient.subscribe(testSubscribe);
+        Message testPublish = new Message(testProtocol, "Science;Someone;UMN;derpdederp.", false);
+        testClient.publish(testPublish);
+        Message testUnsubscribe = new Message(testProtocol, "Science;Someone;UMN;", true);
+        testClient.unsubscribe(testUnsubscribe);
+        testClient.leave();
     }
 }

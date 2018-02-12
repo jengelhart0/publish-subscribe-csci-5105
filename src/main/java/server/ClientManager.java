@@ -74,7 +74,7 @@ public class ClientManager implements CommunicationManager {
             List<Message> afterUnsubscribe = subscriptions
                     .stream()
                     .filter(subscription -> !subscription.asRawMessage().equals(unsubscriptionString))
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toCollection(LinkedList::new));
 
             this.subscriptions = Collections.synchronizedList(afterUnsubscribe);
         }
@@ -111,6 +111,7 @@ public class ClientManager implements CommunicationManager {
                 deliverPublications(toDeliver, deliveryPacket, messageSize);
             } catch (IOException e) {
                 LOGGER.log(Level.SEVERE, "Failed to send matched publications in ClientManager: " + e.toString());
+                e.printStackTrace();
             }
         }
     }
