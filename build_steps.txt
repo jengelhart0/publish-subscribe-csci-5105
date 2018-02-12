@@ -1,0 +1,14 @@
+#From project root...
+
+#Compile shared files with apache commons lang included
+javac -cp lib/commons-lang3-3.7.jar -d class/ src/main/java/shared/*.java
+
+#Create shared.jar
+jar cvf lib/shared.jar class/main/java/shared/*.class
+
+
+
+My IP:
+73.242.4.186
+
+

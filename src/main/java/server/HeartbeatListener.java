@@ -1,7 +1,7 @@
-package server.implementation;
+package server;
 
 import listener.Listener;
-import Message.Protocol;
+import message.Protocol;
 
 import java.io.IOException;
 import java.net.DatagramPacket;

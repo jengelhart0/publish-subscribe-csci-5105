@@ -1,4 +1,4 @@
-package server.implementation;
+package server;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 

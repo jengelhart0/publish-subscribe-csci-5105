@@ -1,8 +1,7 @@
-package server.api;
+package server;
 
-import server.implementation.Query;
-import Message.Message;
-import Message.Protocol;
+import message.Message;
+import message.Protocol;
 
 import java.util.Set;
 

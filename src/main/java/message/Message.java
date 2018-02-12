@@ -1,16 +1,13 @@
-package Message;
+package message;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import server.implementation.Query;
-import server.implementation.PairedKeyMessageStore;
+import server.Query;
+import server.PairedKeyMessageStore;
 
 import java.util.Date;
 import java.util.Set;
 
 public class Message {
-
-//    private String creatorIp;
-//    private String creatorPort;
 
     private Protocol protocol;
     private String asRawMessage;

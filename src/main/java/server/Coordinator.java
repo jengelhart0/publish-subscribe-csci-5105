@@ -1,10 +1,9 @@
-package server.implementation;
+package server;
 
 import communicate.Communicate;
 import communicate.CommunicateArticle;
-import server.api.CommunicationManager;
-import Message.Message;
-import Message.Protocol;
+import message.Message;
+import message.Protocol;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -61,10 +60,10 @@ public class Coordinator implements Communicate {
     private Coordinator() {
     }
 
-    private void initialize(String name, int maxClients, Protocol protocol, int rmiPort, int heartbeatPort,
+    private void initialize(String name, int maxClients, Protocol protocol, InetAddress rmiIp, int rmiPort, int heartbeatPort,
                     InetAddress registryServerIp, int registryServerPort, int serverListSize) {
         try {
-            setCommunicationVariables(name, maxClients, protocol, rmiPort, heartbeatPort,
+            setCommunicationVariables(name, maxClients, protocol, rmiIp, rmiPort, heartbeatPort,
                     registryServerIp, registryServerPort, serverListSize);
             registerWithRegistryServer();
             createClientTaskExecutor();
@@ -72,9 +71,9 @@ public class Coordinator implements Communicate {
             makeThisARemoteCommunicationServer();
         } catch (IOException | RuntimeException e) {
             LOGGER.log(Level.SEVERE, "Failed on server initialization: " + e.toString());
-        } finally {
             cleanup();
         }
+        LOGGER.log(Level.INFO, "Finished initializing remote server.");
     }
 
     private void cleanup() {
@@ -87,7 +86,7 @@ public class Coordinator implements Communicate {
         }
     }
 
-    private void setCommunicationVariables(String name, int maxClients, Protocol protocol, int rmiPort, int heartbeatPort,
+    private void setCommunicationVariables(String name, int maxClients, Protocol protocol, InetAddress rmiIp, int rmiPort, int heartbeatPort,
                                            InetAddress registryServerIp, int registryServerPort, int serverListSize)
             throws UnknownHostException {
 
@@ -99,9 +98,9 @@ public class Coordinator implements Communicate {
 
         this.clientToClientManager = new ConcurrentHashMap<>();
 
-        this.ip = InetAddress.getLocalHost();
         this.heartbeatPort = heartbeatPort;
 
+        this.ip = rmiIp;
         this.rmiPort = rmiPort;
 
         this.registryServerAddress = registryServerIp;
@@ -127,16 +126,20 @@ public class Coordinator implements Communicate {
     }
 
     private void makeThisARemoteCommunicationServer() {
-        if(System.getSecurityManager() == null) {
-            System.setSecurityManager(new SecurityManager());
-        }
+//        if(System.getSecurityManager() == null) {
+//            System.setSecurityManager(new SecurityManager());
+//        }
+        LOGGER.log(Level.SEVERE, "IP " + this.ip.getHostAddress());
+        LOGGER.log(Level.SEVERE, "Port " + Integer.toString(this.rmiPort));
 
         try {
+            System.setProperty("java.rmi.server.hostname", this.ip.getHostAddress());
             Communicate stub =
                     (Communicate) UnicastRemoteObject.exportObject(this, this.rmiPort);
-            Registry registry = LocateRegistry.getRegistry();
+//            Registry registry = LocateRegistry.getRegistry(ip.getHostAddress());
+            Registry registry = LocateRegistry.createRegistry(this.rmiPort);
             registry.rebind(this.name, stub);
-            LOGGER.log(Level.FINE, "Coordinator bound");
+            LOGGER.log(Level.INFO, "Coordinator bound");
         } catch (RemoteException re) {
             LOGGER.log(Level.SEVERE, re.toString());
         }
@@ -311,11 +314,22 @@ public class Coordinator implements Communicate {
     }
 
     public static void main(String[] args) throws UnknownHostException {
+
+        // public IP was 73.242.4.186
+        // currently just trying to get localhost working
+
+        if (!(args.length == 1)) {
+            LOGGER.log(Level.SEVERE, "Need to pass single argument IPv4 address of server.");
+        }
+
+        InetAddress serverIp = InetAddress.getByName(args[0]);
+
         Coordinator coordinator = Coordinator.getInstance();
         coordinator.initialize(
-                CommunicateArticle.NAME,
+                Communicate.NAME,
                 CommunicateArticle.MAXCLIENTS,
                 CommunicateArticle.ARTICLE_PROTOCOL,
+                serverIp,
                 CommunicateArticle.REMOTE_OBJECT_PORT,
                 CommunicateArticle.HEARTBEAT_PORT,
                 InetAddress.getByName(CommunicateArticle.REGISTRY_SERVER_IP),

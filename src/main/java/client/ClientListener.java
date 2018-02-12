@@ -1,8 +1,8 @@
 package client;
 
 import listener.Listener;
-import Message.Message;
-import Message.Protocol;
+import message.Message;
+import message.Protocol;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;

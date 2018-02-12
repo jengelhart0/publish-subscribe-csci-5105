@@ -1,10 +1,9 @@
-package server.implementation;
+package server;
 
-import server.api.MessageStore;
-import Message.Message;
+import message.Message;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import Message.Protocol;
+import message.Protocol;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

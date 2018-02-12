@@ -13,8 +13,8 @@ import java.util.logging.Logger;
 import communicate.Communicate;
 import communicate.CommunicateArticle;
 import communicate.Communicate.RemoteMessageCall;
-import Message.Message;
-import Message.Protocol;
+import message.Message;
+import message.Protocol;
 
 public class Client implements Runnable {
     private static final Logger LOGGER = Logger.getLogger( Client.class.getName() );
@@ -129,14 +129,13 @@ public class Client implements Runnable {
             }
         } catch (RemoteException | NotBoundException | InterruptedException | SocketException e) {
             LOGGER.log(Level.SEVERE, e.toString());
-        } finally {
             cleanup();
         }
     }
 
     private void initializeRemoteCommunication() throws RemoteException, NotBoundException, SocketException {
         startMessageListener();
-        establishSecurityManager();
+//        establishSecurityManager();
         establishRemoteObject();
         join();
     }
@@ -152,11 +151,11 @@ public class Client implements Runnable {
         }
     }
 
-    private void establishSecurityManager() {
-        if (System.getSecurityManager() == null) {
-            System.setSecurityManager(new SecurityManager());
-        }
-    }
+//    private void establishSecurityManager() {
+//        if (System.getSecurityManager() == null) {
+//            System.setSecurityManager(new SecurityManager());
+//        }
+//    }
 
     private void establishRemoteObject() throws RemoteException, NotBoundException {
         Registry registry = LocateRegistry.getRegistry(this.remoteHost);
@@ -173,9 +172,17 @@ public class Client implements Runnable {
     }
 
     public static void main(String[] args) throws UnknownHostException {
+
+        if (!(args.length == 1)) {
+            LOGGER.log(Level.SEVERE, "Need to pass single argument IPv4 address of server.");
+        }
+
+        // public 'server' ip is 73.242.4.186. Testing localhost just to get it up and going.
+        String remoteServerIp = args[0];
+        LOGGER.log(Level.INFO, remoteServerIp);
         Client testClient = new Client(
-                "localhost",
-                CommunicateArticle.NAME,
+                remoteServerIp,
+                Communicate.NAME,
                 CommunicateArticle.ARTICLE_PROTOCOL,
                 8888);
 

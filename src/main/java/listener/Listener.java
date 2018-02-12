@@ -1,6 +1,6 @@
 package listener;
 
-import Message.Protocol;
+import message.Protocol;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -25,7 +25,8 @@ public abstract class Listener implements Runnable {
     public abstract void run();
 
     public void listenAt(int listenPort, InetAddress localAddress) throws SocketException {
-        this.listenSocket = new DatagramSocket(listenPort, localAddress);
+//        this.listenSocket = new DatagramSocket(listenPort, localAddress);
+    this.listenSocket = new DatagramSocket(listenPort);
     }
 
     public void tellThreadToStop() {

@@ -1,4 +1,4 @@
-package Message;
+package message;
 
 import java.util.regex.Pattern;
 

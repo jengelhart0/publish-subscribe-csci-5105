@@ -1,9 +1,7 @@
-package server.implementation;
+package server;
 
-import server.api.CommunicationManager;
-import server.api.MessageStore;
-import Message.Message;
-import Message.Protocol;
+import message.Message;
+import message.Protocol;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
