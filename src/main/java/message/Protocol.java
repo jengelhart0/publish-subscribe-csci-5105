@@ -18,7 +18,7 @@ public class Protocol {
     }
 
     public String[] parse(String message) {
-        return message.split(this.delimiter);
+        return message.split(this.delimiter, -1);
     }
 
     public int getMessageSize() {
@@ -49,6 +49,14 @@ public class Protocol {
             return lastFieldEmpty;
         }
         return !lastFieldEmpty;
+    }
+
+    public String padMessage(String rawMessage) {
+        StringBuilder padder = new StringBuilder(rawMessage);
+        while (padder.length() < messageSize) {
+            padder.append(" ");
+        }
+        return padder.toString();
     }
 
     private boolean isBasicallyValid(String message) throws IllegalArgumentException {

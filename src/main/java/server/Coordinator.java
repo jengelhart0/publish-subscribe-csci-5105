@@ -43,6 +43,8 @@ public class Coordinator implements Communicate {
     private HeartbeatListener heartbeatListener;
     private int heartbeatPort;
 
+//    private Thread subscriptionPullSchedulerThread;
+
     private int rmiPort;
 
     private InetAddress registryServerAddress;
@@ -68,6 +70,7 @@ public class Coordinator implements Communicate {
             registerWithRegistryServer();
             createClientTaskExecutor();
             startHeartbeat();
+            startSubscriptionPullScheduler();
             makeThisARemoteCommunicationServer();
         } catch (IOException | RuntimeException e) {
             LOGGER.log(Level.SEVERE, "Failed on server initialization: " + e.toString());
@@ -126,6 +129,25 @@ public class Coordinator implements Communicate {
             throw new RuntimeException();
         }
     }
+
+    private void startSubscriptionPullScheduler() {
+        Runnable subscriptionPullScheduler = () -> {
+            try {
+                while (true) {
+                    Thread.sleep(2000);
+                    for (CommunicationManager manager: clientToClientManager.values()) {
+                        queueTaskFor(manager, CommunicationManager.Call.PULL_MATCHES, null);
+                    }
+                }
+            } catch (InterruptedException e) {
+                LOGGER.log(Level.SEVERE, e.toString());
+                e.printStackTrace();
+                throw new RuntimeException("Failure in subscription pull scheduler thread.");
+            }
+        };
+        new Thread(subscriptionPullScheduler).start();
+    }
+
 
     private void makeThisARemoteCommunicationServer() {
 //        if(System.getSecurityManager() == null) {

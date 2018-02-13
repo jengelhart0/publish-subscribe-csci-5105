@@ -132,12 +132,16 @@ public class ClientManager implements CommunicationManager {
              ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream))
         {
+            String paddedPublication;
             for (String publication: publicationsToDeliver) {
-                if(publication.length() != messageSize) {
+                if(publication.length() > messageSize) {
                     throw new IllegalArgumentException(
                             "ClientManager tried to deliver publication violating protocol: wrong messageSize");
                 }
-                dataOutputStream.writeChars(publication);
+                paddedPublication = this.protocol.padMessage(publication);
+
+                dataOutputStream.writeUTF(paddedPublication);
+                dataOutputStream.flush();
                 deliveryPacket.setData(byteArrayOutputStream.toByteArray());
                 deliverySocket.send(deliveryPacket);
             }

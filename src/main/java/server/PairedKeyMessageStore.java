@@ -2,6 +2,7 @@ package server;
 
 import message.Message;
 
+import message.Query;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import message.Protocol;
 
@@ -74,15 +75,5 @@ public class PairedKeyMessageStore implements MessageStore {
             message.setNextAccessOffsetFor(condition, messageIdx);
         }
         return true;
-    }
-
-    @Override
-    public Query generateQuery(Message message, Protocol protocol) {
-        return new Query(protocol.getQueryFields(),
-                protocol.parse(message.asRawMessage()),
-                protocol.getWildcard(),
-                message.isSubscription())
-
-                .generate();
     }
 }

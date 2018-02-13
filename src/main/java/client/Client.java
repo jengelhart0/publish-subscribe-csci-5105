@@ -186,21 +186,53 @@ public class Client implements Runnable {
         // public 'server' ip is 73.242.4.186. Testing localhost just to get it up and going.
         String remoteServerIp = args[0];
         LOGGER.log(Level.INFO, remoteServerIp);
-        Client testClient = new Client(
-                remoteServerIp,
-                CommunicateArticle.REMOTE_OBJECT_PORT,
-                Communicate.NAME,
-                CommunicateArticle.ARTICLE_PROTOCOL,
-                8888);
 
-        new Thread(testClient).start();
+        int numTestClients = 4;
+
+        Client[] testClients = new Client[numTestClients];
+        int listenPort = 8888;
+        for (int i = 0; i < numTestClients; i++) {
+            testClients[i] = new Client(
+                    remoteServerIp,
+                    CommunicateArticle.REMOTE_OBJECT_PORT,
+                    Communicate.NAME,
+                    CommunicateArticle.ARTICLE_PROTOCOL,
+                    listenPort++);
+
+            new Thread(testClients[i]).start();
+        }
+
         Protocol testProtocol = CommunicateArticle.ARTICLE_PROTOCOL;
-        Message testSubscribe = new Message(testProtocol, "Science;Someone;UMN;", true);
-        testClient.subscribe(testSubscribe);
-        Message testPublish = new Message(testProtocol, "Science;Someone;UMN;derpdederp.", false);
-        testClient.publish(testPublish);
-        Message testUnsubscribe = new Message(testProtocol, "Science;Someone;UMN;", true);
-        testClient.unsubscribe(testUnsubscribe);
-        testClient.leave();
+
+        String[] testSubscriptions1 =
+                {"Science;Someone;UMN;", "Sports;Me;Reuters;", "Lifestyle;Jane;YourFavoriteMagazine;",
+                 "Entertainment;Someone;Reuters;", "Business;Jane;The Economist;", "Technology;Jack;Wired;",
+                 "Entertainment;Claus;Reuters;", "Business;Albert;The Economist;", "Business;Albert;Extra;",
+                 ";;The Economist;", "Science;;;", ";Jack;;", "Sports;Me;;", "Lifestyle;;Jane;", "Business;Jack;;"};
+
+        for (int i = 0; i < testSubscriptions1.length; i++) {
+            testClients[i % testClients.length].subscribe(
+                    new Message(testProtocol, testSubscriptions1[i], true));
+        }
+
+        String[] testPublications1 =
+                {"Science;Someone;UMN;content1", "Sports;Me;Reuters;content2", "Lifestyle;Jane;YourFavoriteMagazine;content3",
+                 "Entertainment;Someone;Reuters;content4", "Business;Jane;The Economist;content5", "Technology;Jack;Wired;content6",
+                 "Entertainment;Claus;Reuters;content7", "Business;Albert;The Economist;content8", "Business;Albert;Extra;content9",
+                 ";;The Economist;content10", "Science;;;content11", ";Jack;;content12", "Sports;Me;;content13",
+                 "Lifestyle;;Jane;content14", "Business;Jack;;content15"};
+
+        for (int i = 0; i < testPublications1.length; i++) {
+            testClients[testClients.length - 1 - (i % testClients.length)].publish(
+                    new Message(testProtocol, testPublications1[i], false));
+        }
+
+        for (Client client: testClients) {
+            List<Message> feed = client.getCurrentMessageFeed();
+            for (Message message: feed) {
+                System.out.println(message.asRawMessage());
+            }
+            System.out.println("\n");
+        }
     }
 }

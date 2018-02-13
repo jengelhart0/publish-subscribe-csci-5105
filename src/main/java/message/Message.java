@@ -1,8 +1,6 @@
 package message;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import server.Query;
-import server.PairedKeyMessageStore;
 
 import java.util.Date;
 import java.util.Set;
@@ -21,22 +19,17 @@ public class Message {
 
         int messageSize = protocol.getMessageSize();
         if(rawMessage.length() < messageSize) {
-            StringBuilder padder = new StringBuilder(rawMessage);
-            while (padder.length() < messageSize) {
-                padder.append(" ");
-            }
-            this.asRawMessage = padder.toString();
-            System.out.println(this.asRawMessage + " length: " + this.asRawMessage.length());
+            this.asRawMessage = protocol.padMessage(rawMessage);
         }
 
         if (!validate(isSubscription)) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Was an invalid subscription: " +
+                    this.asRawMessage + "length: " + this.asRawMessage.length());
         }
 
         this.asRawMessage = rawMessage;
         this.isSubscription = isSubscription;
         setQuery();
-
     }
 
     private boolean validate(boolean isSubscription) {
@@ -48,7 +41,16 @@ public class Message {
     }
 
     private void setQuery() {
-        this.query = PairedKeyMessageStore.getInstance().generateQuery(this, this.protocol);
+        this.query = generateQuery(this, this.protocol);
+    }
+
+    public Query generateQuery(Message message, Protocol protocol) {
+        return new Query(protocol.getQueryFields(),
+                protocol.parse(message.asRawMessage()),
+                protocol.getWildcard(),
+                message.isSubscription())
+
+                .generate();
     }
 
     public Set<ImmutablePair<String,String>> getQueryConditions() {

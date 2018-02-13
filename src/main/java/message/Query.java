@@ -1,4 +1,4 @@
-package server;
+package message;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
@@ -20,7 +20,7 @@ public class Query {
         this.query = new ConcurrentHashMap<>();
         this.wildcard = wildcard;
         this.isSubscription = isSubscription;
-        this.lastAccess = null;
+        this.lastAccess = new Date();
     }
 
     Query generate() {

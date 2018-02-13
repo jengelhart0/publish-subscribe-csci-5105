@@ -56,8 +56,8 @@ public class ClientListener extends Listener {
 
         try (DataInputStream inputStream = new DataInputStream(
                 new ByteArrayInputStream(packetToReceive.getData()))) {
-            inputStream.read(messageBuffer);
+            String rawMessage = inputStream.readUTF();
+            return new Message(super.getProtocol(), rawMessage, false);
         }
-        return new Message(super.getProtocol(), new String(messageBuffer, "UTF8"), false);
     }
 }
