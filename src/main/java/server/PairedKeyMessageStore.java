@@ -40,8 +40,12 @@ public class PairedKeyMessageStore implements MessageStore {
 
         for(ImmutablePair<String, String> condition: conditions) {
             int nextOffset = subscription.getNextAccessOffsetFor(condition);
-            candidates = store.get(condition)
-                    .getPublicationsStartingAt(nextOffset);
+
+            candidates = (
+                    store.containsKey(condition) ?
+                    store.get(condition).getPublicationsStartingAt(nextOffset)
+                    : new HashSet<>());
+
 
             subscription.setNextAccessOffsetFor(condition, nextOffset + candidates.size());
 

@@ -60,7 +60,7 @@ public class Protocol {
     }
 
     private boolean isBasicallyValid(String message) throws IllegalArgumentException {
-        if(message.length() != this.messageSize) {
+        if(message == null || message.length() != this.messageSize) {
             return false;
         }
 

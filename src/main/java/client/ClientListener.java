@@ -4,8 +4,6 @@ import listener.Listener;
 import message.Message;
 import message.Protocol;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.util.*;
@@ -26,6 +24,7 @@ public class ClientListener extends Listener {
     List<Message> getCurrentMessageFeed() {
         List<Message> feedCopy = Collections.synchronizedList(new LinkedList<>());
         feedCopy.addAll(this.messageFeed);
+        this.messageFeed.clear();
         return feedCopy;
     }
 
@@ -46,18 +45,22 @@ public class ClientListener extends Listener {
         } catch (IOException | IllegalArgumentException e) {
             LOGGER.log(Level.WARNING, "ClientListener failed to receive incoming message: " + e.toString());
             e.printStackTrace();
-        } finally {
-            super.closeListenSocket();
         }
+//        finally {
+//            super.closeListenSocket();
+//        }
     }
 
     private Message getMessageFromRemote(byte[] messageBuffer, DatagramPacket packetToReceive) throws IOException {
         super.receivePacket(packetToReceive);
 
-        try (DataInputStream inputStream = new DataInputStream(
-                new ByteArrayInputStream(packetToReceive.getData()))) {
-            String rawMessage = inputStream.readUTF();
+//        try (DataInputStream inputStream = new DataInputStream(
+//                new ByteArrayInputStream(packetToReceive.getData()))) {
+//            String rawMessage = inputStream.readUTF();
+//            System.out.println("MESSAGE: " + rawMessage);
+            String rawMessage = new String(packetToReceive.getData(), 0, packetToReceive.getLength());
+            System.out.println(rawMessage);
             return new Message(super.getProtocol(), rawMessage, false);
-        }
+//        }
     }
 }

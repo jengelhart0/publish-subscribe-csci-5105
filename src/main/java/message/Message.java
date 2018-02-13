@@ -18,13 +18,12 @@ public class Message {
         this.protocol = protocol;
 
         int messageSize = protocol.getMessageSize();
-        if(rawMessage.length() < messageSize) {
+        if(rawMessage.length() <= messageSize) {
             this.asRawMessage = protocol.padMessage(rawMessage);
         }
 
         if (!validate(isSubscription)) {
-            throw new IllegalArgumentException("Was an invalid subscription: " +
-                    this.asRawMessage + "length: " + this.asRawMessage.length());
+            throw new IllegalArgumentException("Was an invalid subscription: " + this.asRawMessage);
         }
 
         this.asRawMessage = rawMessage;

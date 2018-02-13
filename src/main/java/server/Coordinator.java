@@ -55,14 +55,14 @@ public class Coordinator implements Communicate {
     private String deregisterMessage;
     private String getListMessage;
 
-    private static Coordinator getInstance() {
+    public static Coordinator getInstance() {
         return ourInstance;
     }
 
     private Coordinator() {
     }
 
-    private void initialize(String name, int maxClients, Protocol protocol, InetAddress rmiIp, int rmiPort, int heartbeatPort,
+    public void initialize(String name, int maxClients, Protocol protocol, InetAddress rmiIp, int rmiPort, int heartbeatPort,
                     InetAddress registryServerIp, int registryServerPort, int serverListSize) {
         try {
             setCommunicationVariables(name, maxClients, protocol, rmiIp, rmiPort, heartbeatPort,
@@ -342,29 +342,5 @@ public class Coordinator implements Communicate {
 
     void setGetListMessage(String getListMessage) {
         this.getListMessage = getListMessage;
-    }
-
-    public static void main(String[] args) throws UnknownHostException {
-
-        // public IP was 73.242.4.186
-        // currently just trying to get localhost working
-
-        if (!(args.length == 1)) {
-            LOGGER.log(Level.SEVERE, "Need to pass single argument IPv4 address of server.");
-        }
-
-        InetAddress serverIp = InetAddress.getByName(args[0]);
-
-        Coordinator coordinator = Coordinator.getInstance();
-        coordinator.initialize(
-                Communicate.NAME,
-                CommunicateArticle.MAXCLIENTS,
-                CommunicateArticle.ARTICLE_PROTOCOL,
-                serverIp,
-                CommunicateArticle.REMOTE_OBJECT_PORT,
-                CommunicateArticle.HEARTBEAT_PORT,
-                InetAddress.getByName(CommunicateArticle.REGISTRY_SERVER_IP),
-                CommunicateArticle.REGISTRY_SERVER_PORT,
-                CommunicateArticle.SERVER_LIST_SIZE);
     }
 }

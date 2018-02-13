@@ -132,6 +132,7 @@ public class ClientManager implements CommunicationManager {
              ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream))
         {
+            byte[] messageBuffer = new byte[messageSize];
             String paddedPublication;
             for (String publication: publicationsToDeliver) {
                 if(publication.length() > messageSize) {
@@ -139,11 +140,14 @@ public class ClientManager implements CommunicationManager {
                             "ClientManager tried to deliver publication violating protocol: wrong messageSize");
                 }
                 paddedPublication = this.protocol.padMessage(publication);
+                messageBuffer = paddedPublication.getBytes();
+                DatagramPacket packetToSend = new DatagramPacket(
+                        messageBuffer, messageSize, InetAddress.getByName(clientIp), this.clientPort);
 
-                dataOutputStream.writeUTF(paddedPublication);
-                dataOutputStream.flush();
-                deliveryPacket.setData(byteArrayOutputStream.toByteArray());
-                deliverySocket.send(deliveryPacket);
+//                dataOutputStream.writeUTF(paddedPublication);
+//                dataOutputStream.flush();
+//                deliveryPacket.setData(byteArrayOutputStream.toByteArray());
+                deliverySocket.send(packetToSend);
             }
         }
     }
