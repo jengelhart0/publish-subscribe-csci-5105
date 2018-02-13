@@ -134,7 +134,7 @@ public class Coordinator implements Communicate {
         Runnable subscriptionPullScheduler = () -> {
             try {
                 while (true) {
-                    Thread.sleep(2000);
+                    Thread.sleep(500);
                     for (CommunicationManager manager: clientToClientManager.values()) {
                         queueTaskFor(manager, CommunicationManager.Call.PULL_MATCHES, null);
                     }

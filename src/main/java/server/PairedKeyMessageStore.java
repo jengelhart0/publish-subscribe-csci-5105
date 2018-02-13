@@ -2,9 +2,7 @@ package server;
 
 import message.Message;
 
-import message.Query;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import message.Protocol;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,7 +23,7 @@ public class PairedKeyMessageStore implements MessageStore {
     }
 
     @Override
-    public Set<String> retrieve(Message subscription) {
+    public SortedSet<String> retrieve(Message subscription) {
         if (!subscription.isSubscription()) {
             throw new IllegalArgumentException("Store retrieve() received non-subscription message.");
         }
@@ -33,21 +31,22 @@ public class PairedKeyMessageStore implements MessageStore {
         freshenOffsetsIfNecessary(subscription);
         subscription.setLastAccess(new Date());
 
-        Set<String> matchedPublications = null;
-        Set<String> candidates;
+        SortedSet<String> matchedPublications = null;
+        SortedSet<String> candidates;
 
         Set<ImmutablePair<String, String>> conditions = subscription.getQueryConditions();
 
         for(ImmutablePair<String, String> condition: conditions) {
-            int nextOffset = subscription.getNextAccessOffsetFor(condition);
+            String lastRetrieved = subscription.getLastRetrievedFor(condition);
 
             candidates = (
                     store.containsKey(condition) ?
-                    store.get(condition).getPublicationsStartingAt(nextOffset)
-                    : new HashSet<>());
+                    store.get(condition).getPublicationsStartingAt(lastRetrieved)
+                    : new TreeSet<>());
 
-
-            subscription.setNextAccessOffsetFor(condition, nextOffset + candidates.size());
+            if (!candidates.isEmpty()) {
+                subscription.setLastRetrievedFor(condition, candidates.last());
+            }
 
             if (matchedPublications != null) {
                 matchedPublications.retainAll(candidates);
@@ -75,8 +74,8 @@ public class PairedKeyMessageStore implements MessageStore {
                 listToAddPublicationTo = new PublicationList();
                 store.put(condition, listToAddPublicationTo);
             }
-            Integer messageIdx = listToAddPublicationTo.synchronizedAdd(message.asRawMessage());
-            message.setNextAccessOffsetFor(condition, messageIdx);
+            listToAddPublicationTo.synchronizedAdd(message.asRawMessage());
+            message.setLastRetrievedFor(condition, message.asRawMessage());
         }
         return true;
     }

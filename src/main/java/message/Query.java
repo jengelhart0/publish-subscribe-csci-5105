@@ -10,7 +10,7 @@ public class Query {
     private String[] values;
     private boolean isSubscription;
     private String wildcard;
-    private Map<ImmutablePair<String, String>, Integer> query;
+    private Map<ImmutablePair<String, String>, String> query;
     private Date lastAccess;
     private final Object lastAccessLock = new Object();
 
@@ -31,11 +31,11 @@ public class Query {
         for (i = 0; i < numFields; i++) {
             field = fields[i];
             value = values[i];
-            query.put(new ImmutablePair<>(field, value), 0);
+            query.put(new ImmutablePair<>(field, value), "");
 
             // Messages to be published need to be added to wildcard buckets
             if (!isSubscription) {
-                query.put(new ImmutablePair<>(field, wildcard), 0);
+                query.put(new ImmutablePair<>(field, wildcard), "");
             }
         }
         return this;
@@ -43,7 +43,7 @@ public class Query {
 
     public void refreshAccessOffsets() {
         for(ImmutablePair<String, String> fieldValuePair: query.keySet()) {
-            setNextAccessOffsetFor(fieldValuePair, 0);
+            setLastRetrievedFor(fieldValuePair, "");
         }
     }
 
@@ -51,12 +51,12 @@ public class Query {
         return query.keySet();
     }
 
-    public int getNextAccessOffsetFor(ImmutablePair<String, String> fieldValuePair) {
+    public String getLastRetrievedFor(ImmutablePair<String, String> fieldValuePair) {
         return query.get(fieldValuePair);
     }
 
-    public void setNextAccessOffsetFor(ImmutablePair<String, String> fieldValuePair, Integer offset) {
-        query.put(fieldValuePair, offset);
+    public void setLastRetrievedFor(ImmutablePair<String, String> fieldValuePair, String lastRetrieved) {
+        query.put(fieldValuePair, lastRetrieved);
     }
 
     public Date getLastAccess() {

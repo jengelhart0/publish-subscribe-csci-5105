@@ -59,7 +59,7 @@ public class ClientListener extends Listener {
 //            String rawMessage = inputStream.readUTF();
 //            System.out.println("MESSAGE: " + rawMessage);
             String rawMessage = new String(packetToReceive.getData(), 0, packetToReceive.getLength());
-            System.out.println(rawMessage);
+//            System.out.println(rawMessage);
             return new Message(super.getProtocol(), rawMessage, false);
 //        }
     }

@@ -1,28 +1,29 @@
 package server;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 
 class PublicationList {
     private static final Logger LOGGER = Logger.getLogger( Coordinator.class.getName() );
 
-    private List<String> publications;
+    private SortedSet<String> publications;
     private final Object listLock = new Object();
 
     PublicationList() {
-        this.publications = new ArrayList<>();
+        this.publications = new TreeSet<>();
     }
 
-    Set<String> getPublicationsStartingAt(int index) {
-        int size = this.publications.size();
-        if (index > size) {
-            index = size;
-        }
+    SortedSet<String> getPublicationsStartingAt(String lastReceived) {
         synchronized (listLock) {
-            return new HashSet<>(this.publications.subList(index, size));
+            if (this.publications.contains(lastReceived)) {
+                SortedSet<String> result = new TreeSet<>(this.publications.tailSet(lastReceived));
+                result.remove(lastReceived);
+                return result;
+            }
+            if (lastReceived.equals("")) {
+                return this.publications;
+            }
+            return new TreeSet<>();
         }
     }
 

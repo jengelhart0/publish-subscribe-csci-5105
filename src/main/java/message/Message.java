@@ -60,12 +60,12 @@ public class Message {
         return protocol;
     }
 
-    public int getNextAccessOffsetFor(ImmutablePair<String, String> condition) {
-        return this.query.getNextAccessOffsetFor(condition);
+    public String getLastRetrievedFor(ImmutablePair<String, String> condition) {
+        return this.query.getLastRetrievedFor(condition);
     }
 
-    public void setNextAccessOffsetFor(ImmutablePair<String, String> condition, int offset) {
-        this.query.setNextAccessOffsetFor(condition, offset);
+    public void setLastRetrievedFor(ImmutablePair<String, String> condition, String lastRetrieved) {
+        this.query.setLastRetrievedFor(condition, lastRetrieved);
     }
 
     public Date getLastAccess() {
