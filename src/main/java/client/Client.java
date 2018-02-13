@@ -26,6 +26,9 @@ public class Client implements Runnable {
     private int remoteServerPort;
     private Protocol protocol;
 
+    private boolean terminate;
+    private final Object terminateLock = new Object();
+
     private ClientListener listener = null;
 
     private InetAddress localAddress;
@@ -39,6 +42,7 @@ public class Client implements Runnable {
         this.protocol = protocol;
         this.localAddress = InetAddress.getLocalHost();
         this.listenPort = listenPort;
+        this.terminate = false;
 
         initializeRemoteCommunication();
     }
@@ -128,12 +132,18 @@ public class Client implements Runnable {
     public void run() {
         try {
             while(true) {
+                synchronized (terminateLock) {
+                    if (terminate) {
+                        break;
+                    }
+                }
                 ping();
                 Thread.sleep(10000);
             }
         } catch (RemoteException | InterruptedException e) {
             LOGGER.log(Level.SEVERE, e.toString());
             e.printStackTrace();
+        } finally {
             cleanup();
         }
     }
@@ -166,6 +176,12 @@ public class Client implements Runnable {
 //        Registry registry = LocateRegistry.getRegistry(this.remoteHost, this.remoteServerPort);
         Registry registry = LocateRegistry.getRegistry("127.0.0.1");
         this.communicate = (Communicate) registry.lookup(this.communicateName);
+    }
+
+    public void terminateClient() {
+        synchronized (terminateLock) {
+            this.terminate = true;
+        }
     }
 
     private void cleanup() {

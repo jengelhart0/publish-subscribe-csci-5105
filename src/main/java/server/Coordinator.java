@@ -67,11 +67,11 @@ public class Coordinator implements Communicate {
         try {
             setCommunicationVariables(name, maxClients, protocol, rmiIp, rmiPort, heartbeatPort,
                     registryServerIp, registryServerPort, serverListSize);
-            registerWithRegistryServer();
             createClientTaskExecutor();
             startHeartbeat();
             startSubscriptionPullScheduler();
             makeThisARemoteCommunicationServer();
+            registerWithRegistryServer();
         } catch (IOException | RuntimeException e) {
             LOGGER.log(Level.SEVERE, "Failed on server initialization: " + e.toString());
             e.printStackTrace();
@@ -177,7 +177,6 @@ public class Coordinator implements Communicate {
 
     private void setRegistryServerMessages() throws UnknownHostException {
         String ip = this.ip.getHostAddress();
-
         // TODO: Figure out what Port vs. RMI Port means...
         this.registerMessage = "Register;RMI;" + ip + ";" + heartbeatPort + ";" + name + ";" + rmiPort;
         this.deregisterMessage = "Deregister;RMI;" + ip + ";" + heartbeatPort;

@@ -9,8 +9,8 @@ public interface CommunicateArticle extends Communicate {
 
     int SERVER_LIST_SIZE = 1024;
 
-    String REGISTRY_SERVER_IP = "dio.cs.umn.edu";
-    int REGISTRY_SERVER_PORT = 5105;
+    String REGISTRY_SERVER_IP = "localhost";
+    int REGISTRY_SERVER_PORT = 5104;
     int HEARTBEAT_PORT = 9453;
     int REMOTE_OBJECT_PORT = 1099;
 

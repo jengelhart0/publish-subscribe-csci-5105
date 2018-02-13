@@ -21,7 +21,7 @@ class PublicationList {
                 return result;
             }
             if (lastReceived.equals("")) {
-                return this.publications;
+                return new TreeSet<>(this.publications);
             }
             return new TreeSet<>();
         }
