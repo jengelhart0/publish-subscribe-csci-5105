@@ -79,11 +79,10 @@ public class Client implements Runnable {
         try {
             boolean isCallSuccessful = makeCall(message, call);
             if (!isCallSuccessful) {
-                throw new RemoteException("Communication attempt returned failure (i.e., false).");
+                throw new RuntimeException("RMI returned false.");
             }
         } catch (RemoteException | IllegalArgumentException e) {
-            LOGGER.log(Level.SEVERE, "Attempt to establish communication or communicate" + message.asRawMessage() +
-                    "failed: " + e.toString());
+            LOGGER.log(Level.SEVERE, "Attempt to establish communication or communicate failed: " + e.toString());
             return false;
         }
         return true;

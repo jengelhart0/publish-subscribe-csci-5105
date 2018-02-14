@@ -1,7 +1,5 @@
 package message;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -10,7 +8,7 @@ public class Query {
     private String[] values;
     private boolean isSubscription;
     private String wildcard;
-    private Map<ImmutablePair<String, String>, String> query;
+    private Map<String, String> query;
     private Date lastAccess;
     private final Object lastAccessLock = new Object();
 
@@ -31,31 +29,31 @@ public class Query {
         for (i = 0; i < numFields; i++) {
             field = fields[i];
             value = values[i];
-            query.put(new ImmutablePair<>(field, value), "");
+            query.put(field + "_" + value, "");
 
             // Messages to be published need to be added to wildcard buckets
             if (!isSubscription) {
-                query.put(new ImmutablePair<>(field, wildcard), "");
+                query.put(field + "_" + wildcard, "");
             }
         }
         return this;
     }
 
     public void refreshAccessOffsets() {
-        for(ImmutablePair<String, String> fieldValuePair: query.keySet()) {
+        for(String fieldValuePair: query.keySet()) {
             setLastRetrievedFor(fieldValuePair, "");
         }
     }
 
-    public Set<ImmutablePair<String, String>> getConditions() {
+    public Set<String> getConditions() {
         return query.keySet();
     }
 
-    public String getLastRetrievedFor(ImmutablePair<String, String> fieldValuePair) {
+    public String getLastRetrievedFor(String fieldValuePair) {
         return query.get(fieldValuePair);
     }
 
-    public void setLastRetrievedFor(ImmutablePair<String, String> fieldValuePair, String lastRetrieved) {
+    public void setLastRetrievedFor(String fieldValuePair, String lastRetrieved) {
         query.put(fieldValuePair, lastRetrieved);
     }
 

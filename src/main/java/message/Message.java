@@ -1,7 +1,5 @@
 package message;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-
 import java.util.Date;
 import java.util.Set;
 
@@ -50,7 +48,7 @@ public class Message {
                 .generate();
     }
 
-    public Set<ImmutablePair<String,String>> getQueryConditions() {
+    public Set<String> getQueryConditions() {
         return this.query.getConditions();
     }
 
@@ -58,11 +56,11 @@ public class Message {
         return protocol;
     }
 
-    public String getLastRetrievedFor(ImmutablePair<String, String> condition) {
+    public String getLastRetrievedFor(String condition) {
         return this.query.getLastRetrievedFor(condition);
     }
 
-    public void setLastRetrievedFor(ImmutablePair<String, String> condition, String lastRetrieved) {
+    public void setLastRetrievedFor(String condition, String lastRetrieved) {
         this.query.setLastRetrievedFor(condition, lastRetrieved);
     }
 

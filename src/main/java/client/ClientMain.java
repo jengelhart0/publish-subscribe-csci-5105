@@ -127,7 +127,7 @@ public class ClientMain {
         }
         LOGGER.log(Level.INFO, resultMessage);
 
-        if(testHighLoad(remoteServerIp, 50000, protocol, publications1, subscriptions1)) {
+        if(testHighLoad(remoteServerIp, 300, protocol, publications1, subscriptions1)) {
             resultMessage = "Test high load PASSED.";
         } else {
             resultMessage = "Test high load FAILED.";
@@ -247,7 +247,7 @@ public class ClientMain {
 
         for (int i = 0; i < numClient; i++) {
             Client newClient = createNewClient(remoteServerIp, listenPort++);
-            System.out.println("Created client" + Integer.toString(i));
+            LOGGER.log(Level.FINE, "Created client " + Integer.toString(i));
             clients.add(newClient);
             addSubscriptions(subscriptions, protocol, newClient);
         }
