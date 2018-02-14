@@ -54,6 +54,7 @@ public class ServerMain {
         // currently just trying to get localhost working
         if (args.length < 1) {
             LOGGER.log(Level.SEVERE, "Need to pass single argument IPv4 address of server.");
+            return;
         }
         String remoteServerIp = args[0];
         LOGGER.log(Level.INFO, "Attempting to create server at " + remoteServerIp);
@@ -72,6 +73,7 @@ public class ServerMain {
         } else {
             if (args.length > 2) {
                 LOGGER.log(Level.SEVERE, "Usage: java ServerMain <serverIp> <test name>");
+                return;
             }
 
             // We must always run server locally to this codebase, so...
