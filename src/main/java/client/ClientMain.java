@@ -95,21 +95,21 @@ public class ClientMain {
 
     private static void runAllTests(String remoteServerIp, Protocol protocol) throws  IOException, NotBoundException, InterruptedException {
         String[] publications1 =
-                {"Science;Someone;UMN;content1", "Sports;Me;Reuters;content2", "Lifestyle;Jane;YourFavoriteMagazine;content3",
-                        "Entertainment;Someone;Reuters;content4", "Business;Jane;The Economist;content5", "Technology;Jack;Wired;content6",
-                        "Entertainment;Claus;Reuters;content7", "Business;Albert;The Economist;content8", "Business;Albert;Extra;content9",
-                        ";;The Economist;content10", "Science;;;content11", ";Jack;;content12", "Sports;Me;;content13",
-                        "Lifestyle;;Jane;content14", "Business;Jack;;content15"};
+                {"Science;Someone;UMN;content 1 is great!", "Sports;Me;Reuters;content2", "Lifestyle;Jane;YourFavoriteMagazine;content3",
+                 "Entertainment;Someone;Reuters;content4", "Business;Jane;The Economist;content5", "Technology;Jack;Wired;content6",
+                 "Entertainment;Claus;Reuters;content7", "Business;Albert;The Economist;content8", "Business;Albert;Extra;content9",
+                 ";;The Economist;content10", "Science;;;content11", ";Jack;;content12", "Sports;Me;;content13",
+                 "Lifestyle;;Jane;my spaced content14", "Business;Jack;;content15"};
 
         String[] subscriptions1 =
                 {"Science;Someone;UMN;", "Sports;Me;Reuters;", "Lifestyle;Jane;YourFavoriteMagazine;",
-                        "Entertainment;Someone;Reuters;", "Business;Jane;The Economist;"};
+                 "Entertainment;Someone;Reuters;", "Business;Jane;The Economist;", ";Jack;;"};
 
         String[] expected1 =
-                {"Science;Someone;UMN;content1", "Sports;Me;Reuters;content2", "Lifestyle;Jane;YourFavoriteMagazine;content3",
-                        "Entertainment;Someone;Reuters;content4", "Business;Jane;The Economist;content5",};
+                {publications1[0], publications1[1], publications1[2], publications1[3], publications1[4],
+                 publications1[5], publications1[11], publications1[14]};
 
-
+        Thread.sleep(3000);
 
         String resultMessage;
         if(testSingleSubscriberSinglePublisher(remoteServerIp, protocol, publications1, subscriptions1, expected1)) {
@@ -119,13 +119,54 @@ public class ClientMain {
         }
         LOGGER.log(Level.INFO, resultMessage);
 
+
         if(testSinglePublishMultipleSubscribers(remoteServerIp, 10, protocol, publications1, subscriptions1, expected1)) {
             resultMessage = "Test single publisher, multiple subscribers PASSED.";
         } else {
             resultMessage = "Test single publisher, multiple subscribers FAILED.";
         }
-
         LOGGER.log(Level.INFO, resultMessage);
+
+        if(testHighLoad(remoteServerIp, 1000, protocol, publications1, subscriptions1)) {
+            resultMessage = "Test high load PASSED.";
+        } else {
+            resultMessage = "Test high load FAILED.";
+        }
+        LOGGER.log(Level.INFO, resultMessage);
+
+        String[] invalidPublications =
+                {";;;invalidContents1", "Spurts;Me;Reuters;wrongType", "Entertainment;Someone;Reuters;;;",
+                        ";;;", "Entertainment:test:test:test"};
+
+        if(testInvalid(invalidPublications, protocol, false)) {
+            resultMessage = "Test invalid publications PASSED.";
+        } else {
+            resultMessage = "Test invalid publications FAILED.";
+        }
+        LOGGER.log(Level.INFO, resultMessage);
+
+        String[] invalidSubscriptions =
+                {";;;invalidContents1", ";;;", "Teknology;;;", ";stillNoContentsAllowed;;invalidContents2", "this;isn't;allowed;;"};
+
+        if(testInvalid(invalidSubscriptions, protocol, true)) {
+            resultMessage = "Test invalid subscriptions PASSED.";
+        } else {
+            resultMessage = "Test invalid subscriptions FAILED.";
+        }
+        LOGGER.log(Level.INFO, resultMessage);
+
+        if(testLeave(remoteServerIp)) {
+            LOGGER.log(Level.INFO, "Test client leave PASSED.");
+        } else {
+            LOGGER.log(Level.INFO, "Test client leave FAILED.");
+        }
+        if(testUnsubscribe(protocol, remoteServerIp)) {
+            resultMessage = "Test unsubscribe PASSED.";
+        } else {
+            resultMessage = "Test unsubscribe FAILED.";
+        }
+        LOGGER.log(Level.INFO, resultMessage);
+
     }
 
     private static void addSubscriptions(String[] subscriptions, Protocol protocol, Client client)
@@ -198,16 +239,85 @@ public class ClientMain {
         return allPassed;
     }
 
-    private static boolean testPublishInvalid() {
-        return false;
+    private static boolean testHighLoad(String remoteServerIp, int numClient, Protocol protocol, String[] publications,
+            String[] subscriptions) throws IOException, NotBoundException, InterruptedException {
+        int listenPort = 12888;
+
+        List<Client> clients = new LinkedList<>();
+
+        for (int i = 0; i < numClient; i++) {
+            Client newClient = createNewClient(remoteServerIp, listenPort++);
+            System.out.println("Created client" + Integer.toString(i));
+            clients.add(newClient);
+            addSubscriptions(subscriptions, protocol, newClient);
+        }
+
+        for (int i = 0; i < clients.size(); i++) {
+            for(String publication: publications) {
+                clients.get(i).publish(new Message(protocol, publication + Integer.toString(i), false));
+            }
+        }
+
+        Thread.sleep(10000);
+
+        boolean allPassed = true;
+        for (Client client: clients) {
+            if (client.getCurrentMessageFeed().isEmpty()) {
+                allPassed = false;
+                client.terminateClient();
+                break;
+            }
+            client.terminateClient();
+        }
+        return allPassed;
     }
 
-    private static boolean testSubscribeInvalid() {
-        return false;
+    private static boolean testInvalid(String[] invalidMessages, Protocol protocol, boolean isSubscription)
+            throws IOException, NotBoundException {
+
+        int numInvalidCaught = 0;
+
+        for(String invalid: invalidMessages) {
+            try {
+                new Message(protocol, invalid, isSubscription);
+            } catch (IllegalArgumentException e) {
+                numInvalidCaught++;
+            }
+        }
+        return(invalidMessages.length == numInvalidCaught);
     }
 
-    public static boolean testUnsubscribe() {
-        return false;
+    public static boolean testLeave(String remoteServerIp) throws IOException, NotBoundException {
+        int listenPort = 10888;
+        Client client = createNewClient(remoteServerIp, listenPort);
+        boolean left = client.leave();
+        client.terminateClient();
+        return left;
+    }
+
+    public static boolean testUnsubscribe(Protocol protocol, String remoteServerIp)
+            throws IOException, NotBoundException, InterruptedException {
+
+        String[] subscriptions = {"Science;Someone;UMN;", "Sports;Me;Reuters;"};
+        String[] publications = {"Science;Someone;UMN;content 1 is great!", "Sports;Me;Reuters;content2"};
+
+        int listenPort = 11888;
+
+        Client unsubscriber = createNewClient(remoteServerIp, listenPort++);
+        addSubscriptions(subscriptions, protocol, unsubscriber);
+
+        unsubscriber.unsubscribe(new Message(protocol, subscriptions[0], true));
+        unsubscriber.unsubscribe(new Message(protocol, subscriptions[1], true));
+
+        Client publisher = createNewClient(remoteServerIp, listenPort);
+        makePublications(publications, protocol, publisher);
+        publisher.terminateClient();
+
+        Thread.sleep(6000);
+
+        boolean passed = validateReceivedMessages(unsubscriber.getCurrentMessageFeed(), new String[]{}, protocol);
+        unsubscriber.terminateClient();
+        return passed;
     }
 
     public static void main(String[] args) throws IOException, NotBoundException, InterruptedException {

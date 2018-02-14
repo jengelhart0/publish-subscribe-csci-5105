@@ -13,8 +13,6 @@ public class Message {
     private boolean isSubscription;
 
     public Message(Protocol protocol, String rawMessage, boolean isSubscription) {
-        // TODO: validate message/handle exceptions
-
         this.protocol = protocol;
 
         int messageSize = protocol.getMessageSize();

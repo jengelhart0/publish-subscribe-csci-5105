@@ -6,6 +6,7 @@ import message.Protocol;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.SocketException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -29,6 +30,11 @@ public class ClientListener extends Listener {
     }
 
     @Override
+    public void forceCloseSocket() {
+        closeListenSocket();
+    }
+
+    @Override
     public void run() {
         int messageSize = super.getProtocol().getMessageSize();
 
@@ -36,19 +42,23 @@ public class ClientListener extends Listener {
         DatagramPacket packetToReceive = new DatagramPacket(new byte[messageSize], messageSize);
         try {
             while(true) {
-                if (shouldThreadStop()) {
-                    return;
-                }
                 Message newMessage = getMessageFromRemote(messageBuffer, packetToReceive);
                 this.messageFeed.add(newMessage);
+            }
+        } catch (SocketException e) {
+            if (shouldThreadStop()) {
+                LOGGER.log(Level.FINE, "ClientListener gracefully exiting after being asked to stop.");
+            } else {
+                LOGGER.log(Level.WARNING, "ClientListener failed to receive incoming message: " + e.toString());
+                e.printStackTrace();
             }
         } catch (IOException | IllegalArgumentException e) {
             LOGGER.log(Level.WARNING, "ClientListener failed to receive incoming message: " + e.toString());
             e.printStackTrace();
         }
-//        finally {
-//            super.closeListenSocket();
-//        }
+        finally {
+            closeListenSocket();
+        }
     }
 
     private Message getMessageFromRemote(byte[] messageBuffer, DatagramPacket packetToReceive) throws IOException {

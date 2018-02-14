@@ -5,6 +5,7 @@ import message.Protocol;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.SocketException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,12 +24,28 @@ public class HeartbeatListener extends Listener {
         try {
             while (true) {
                 super.receivePacket(heartbeatPacket);
+                String rawMessage = new String(heartbeatPacket.getData(), 0, heartbeatPacket.getLength());
                 super.sendPacket(heartbeatPacket);
+                LOGGER.log(Level.INFO, rawMessage);
             }
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, e.toString());
+        } catch (SocketException e) {
+            if (shouldThreadStop()) {
+                LOGGER.log(Level.FINE, "HeartbeatListener gracefully exiting after being asked to stop.");
+            } else {
+                LOGGER.log(Level.WARNING, "HeartbeatListener failed to receive incoming message: " + e.toString());
+                e.printStackTrace();
+            }
+        } catch (IOException | IllegalArgumentException e) {
+            LOGGER.log(Level.WARNING, "HeartbeatListener failed to receive incoming message: " + e.toString());
+            e.printStackTrace();
         } finally {
-            super.closeListenSocket();
+            closeListenSocket();
         }
     }
+
+    @Override
+    public void forceCloseSocket() {
+        closeListenSocket();
+    }
+
 }

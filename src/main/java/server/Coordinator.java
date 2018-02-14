@@ -43,6 +43,8 @@ public class Coordinator implements Communicate {
     private HeartbeatListener heartbeatListener;
     private int heartbeatPort;
 
+    private int getListPort;
+
 //    private Thread subscriptionPullSchedulerThread;
 
     private int rmiPort;
@@ -53,7 +55,6 @@ public class Coordinator implements Communicate {
 
     private String registerMessage;
     private String deregisterMessage;
-    private String getListMessage;
 
     public static Coordinator getInstance() {
         return ourInstance;
@@ -63,9 +64,9 @@ public class Coordinator implements Communicate {
     }
 
     public void initialize(String name, int maxClients, Protocol protocol, InetAddress rmiIp, int rmiPort, int heartbeatPort,
-                    InetAddress registryServerIp, int registryServerPort, int serverListSize) {
+                    int getListPort, InetAddress registryServerIp, int registryServerPort, int serverListSize) {
         try {
-            setCommunicationVariables(name, maxClients, protocol, rmiIp, rmiPort, heartbeatPort,
+            setCommunicationVariables(name, maxClients, protocol, rmiIp, rmiPort, heartbeatPort, getListPort,
                     registryServerIp, registryServerPort, serverListSize);
             createClientTaskExecutor();
             startHeartbeat();
@@ -80,9 +81,10 @@ public class Coordinator implements Communicate {
         LOGGER.log(Level.INFO, "Finished initializing remote server.");
     }
 
-    private void cleanup() {
+    public void cleanup() {
         try {
             heartbeatListener.tellThreadToStop();
+            heartbeatListener.forceCloseSocket();
             deregisterFromRegistryServer();
             clientTaskExecutor.shutdown();
         } catch (IOException e) {
@@ -91,8 +93,8 @@ public class Coordinator implements Communicate {
         }
     }
 
-    private void setCommunicationVariables(String name, int maxClients, Protocol protocol, InetAddress rmiIp, int rmiPort, int heartbeatPort,
-                                           InetAddress registryServerIp, int registryServerPort, int serverListSize)
+    private void setCommunicationVariables(String name, int maxClients, Protocol protocol, InetAddress rmiIp, int rmiPort,
+           int heartbeatPort, int getListPort, InetAddress registryServerIp, int registryServerPort, int serverListSize)
             throws UnknownHostException {
 
         this.name = name;
@@ -104,6 +106,8 @@ public class Coordinator implements Communicate {
         this.clientToClientManager = new ConcurrentHashMap<>();
 
         this.heartbeatPort = heartbeatPort;
+
+        this.getListPort = getListPort;
 
         this.ip = rmiIp;
         this.rmiPort = rmiPort;
@@ -153,8 +157,8 @@ public class Coordinator implements Communicate {
 //        if(System.getSecurityManager() == null) {
 //            System.setSecurityManager(new SecurityManager());
 //        }
-        LOGGER.log(Level.SEVERE, "IP " + this.ip.getHostAddress());
-        LOGGER.log(Level.SEVERE, "Port " + Integer.toString(this.rmiPort));
+        LOGGER.log(Level.INFO, "IP " + this.ip.getHostAddress());
+        LOGGER.log(Level.INFO, "Port " + Integer.toString(this.rmiPort));
 
         try {
 //            System.setProperty("java.rmi.server.hostname", this.ip.getHostAddress());
@@ -180,7 +184,6 @@ public class Coordinator implements Communicate {
         // TODO: Figure out what Port vs. RMI Port means...
         this.registerMessage = "Register;RMI;" + ip + ";" + heartbeatPort + ";" + name + ";" + rmiPort;
         this.deregisterMessage = "Deregister;RMI;" + ip + ";" + heartbeatPort;
-        this.getListMessage = "GetList;RMI;" + ip + ";" + heartbeatPort;
     }
 
     private void registerWithRegistryServer() throws IOException {
@@ -191,28 +194,27 @@ public class Coordinator implements Communicate {
         sendRegistryServerMessage(this.deregisterMessage);
     }
 
-    private List<String> getListOfServers() throws IOException {
+    public String[] getListOfServers() throws IOException {
         int listSizeinBytes = this.serverListSize;
         DatagramPacket registryPacket = new DatagramPacket(new byte[listSizeinBytes], listSizeinBytes);
-        byte[] serversBuffer = new byte[listSizeinBytes];
 
         try (DatagramSocket getListSocket = new DatagramSocket()) {
+            String getListMessage = "GetList;RMI;"
+                    + ip.getHostAddress()
+                    + ";"
+                    + this.heartbeatPort;
             // sending here to minimize chance response arrives before we listen for it
-            sendRegistryServerMessage(this.getListMessage);
+            getListSocket.send(makeRegistryServerPacket(getListMessage));
             getListSocket.receive(registryPacket);
         }
+        String[] rawServerList = new String(registryPacket.getData(), 0, registryPacket.getLength(), "UTF8")
+                .split(this.protocol.getDelimiter());
 
-        try (DataInputStream inputStream = new DataInputStream(
-                new ByteArrayInputStream(registryPacket.getData()))) {
-            inputStream.read(serversBuffer);
+        String[] results = new String[rawServerList.length / 2];
+        for (int i = 0; i < rawServerList.length; i+=2) {
+            results[i / 2] = rawServerList[i] + ";" + rawServerList[i+1];
         }
-
-        String servers = new String(serversBuffer, "UTF8");
-
-        LOGGER.log(Level.INFO, servers);
-        // TODO: Need to figure out what the format of this is: handout not clear, check the log result of it.
-        System.exit(0);
-        return null;
+        return results;
     }
 
     private void sendRegistryServerMessage(String rawMessage) throws IOException {
@@ -329,17 +331,5 @@ public class Coordinator implements Communicate {
 
     private String getIpPortString(String ip, int port) {
         return ip + this.protocol.getDelimiter() + Integer.toString(port);
-    }
-
-    void setRegisterMessage(String registerMessage) {
-        this.registerMessage = registerMessage;
-    }
-
-    void setDeregisterMessage(String deregisterMessage) {
-        this.deregisterMessage = deregisterMessage;
-    }
-
-    void setGetListMessage(String getListMessage) {
-        this.getListMessage = getListMessage;
     }
 }

@@ -30,9 +30,9 @@ public class Client implements Runnable {
     private final Object terminateLock = new Object();
 
     private ClientListener listener = null;
+    private int listenPort;
 
     private InetAddress localAddress;
-    private int listenPort;
 
     public Client (String remoteHost, int remoteServerPort, String communicateName, Protocol protocol,
                    int listenPort) throws IOException, NotBoundException {
@@ -82,9 +82,8 @@ public class Client implements Runnable {
                 throw new RemoteException("Communication attempt returned failure (i.e., false).");
             }
         } catch (RemoteException | IllegalArgumentException e) {
-            LOGGER.log(Level.SEVERE,
-                    "Attempt to establish communication or communicate" + message.asRawMessage() +
-                            "failed: " + e.toString());
+            LOGGER.log(Level.SEVERE, "Attempt to establish communication or communicate" + message.asRawMessage() +
+                    "failed: " + e.toString());
             return false;
         }
         return true;
@@ -187,6 +186,7 @@ public class Client implements Runnable {
     private void cleanup() {
         leave();
         this.listener.tellThreadToStop();
+        this.listener.forceCloseSocket();
     }
 
     public List<Message> getCurrentMessageFeed() {
