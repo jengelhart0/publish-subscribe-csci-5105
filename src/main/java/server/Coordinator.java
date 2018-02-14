@@ -158,7 +158,7 @@ public class Coordinator implements Communicate {
 
         try {
 //            System.setProperty("java.rmi.server.hostname", this.ip.getHostAddress());
-            System.setProperty("java.rmi.server.hostname", "127.0.0.1");
+            System.setProperty("java.rmi.server.hostname", this.ip.getHostAddress());
 
 //            Communicate stub =
 //                    (Communicate) UnicastRemoteObject.exportObject(this, this.rmiPort);

@@ -175,7 +175,7 @@ public class Client implements Runnable {
 
     private void establishRemoteObject() throws RemoteException, NotBoundException {
 //        Registry registry = LocateRegistry.getRegistry(this.remoteHost, this.remoteServerPort);
-        Registry registry = LocateRegistry.getRegistry("127.0.0.1");
+        Registry registry = LocateRegistry.getRegistry(this.remoteHost);
         this.communicate = (Communicate) registry.lookup(this.communicateName);
     }
 

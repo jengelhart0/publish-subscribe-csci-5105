@@ -12,47 +12,6 @@ import communicate.CommunicateArticle;
 import message.Message;
 import message.Protocol;
 
-//        String[] testPublications1 =
-//                {"Science;Someone;UMN;content1", "Sports;Me;Reuters;content2", "Lifestyle;Jane;YourFavoriteMagazine;content3",
-//                "Entertainment;Someone;Reuters;content4", "Business;Jane;The Economist;content5", "Technology;Jack;Wired;content6",
-//                "Entertainment;Claus;Reuters;content7", "Business;Albert;The Economist;content8", "Business;Albert;Extra;content9",
-//                ";;The Economist;content10", "Science;;;content11", ";Jack;;content12", "Sports;Me;;content13",
-//                "Lifestyle;;Jane;content14", "Business;Jack;;content15"};
-//
-//                String[] testSubscriptions1 =
-//                {"Science;Someone;UMN;", "Sports;Me;Reuters;", "Lifestyle;Jane;YourFavoriteMagazine;",
-//                "Entertainment;Someone;Reuters;", "Business;Jane;The Economist;", "Technology;Jack;Wired;",
-//                "Entertainment;Claus;Reuters;", "Business;Albert;The Economist;", "Business;Albert;Extra;",
-//                ";;The Economist;", "Science;;;", ";Jack;;", "Sports;Me;;", "Lifestyle;;Jane;", "Business;Jack;;"};
-
-
-//        for (int i = 0; i < testSubscriptions1.length; i++) {
-//                testClients[i % testClients.length].subscribe(
-//                new Message(testProtocol, testSubscriptions1[i], true));
-//                }
-//
-//
-//
-//                String[] testPublications1 =
-//                {"Science;Someone;UMN;content1"};
-//
-//                for (int i = 0; i < testPublications1.length; i++) {
-//                testClients[testClients.length - 1 - (i % testClients.length)].publish(
-//                new Message(testProtocol, testPublications1[i], false));
-//                }
-//
-//                for (Client client : testClients) {
-//                List<Message> feed = client.getCurrentMessageFeed();
-//                for (Message message : feed) {
-//                System.out.println(message.asRawMessage());
-//                }
-//                System.out.println("\n");
-//                }
-
-
-
-
-
 public class ClientMain {
     private static final Logger LOGGER = Logger.getLogger( ClientMain.class.getName() );
 
@@ -117,7 +76,7 @@ public class ClientMain {
         } else {
             resultMessage = "Test single subscriber, single publisher FAILED.";
         }
-        LOGGER.log(Level.INFO, resultMessage);
+        System.out.println(resultMessage);
 
 
         if(testSinglePublishMultipleSubscribers(remoteServerIp, 10, protocol, publications1, subscriptions1, expected1)) {
@@ -125,14 +84,14 @@ public class ClientMain {
         } else {
             resultMessage = "Test single publisher, multiple subscribers FAILED.";
         }
-        LOGGER.log(Level.INFO, resultMessage);
+        System.out.println(resultMessage);
 
         if(testHighLoad(remoteServerIp, 300, protocol, publications1, subscriptions1)) {
             resultMessage = "Test high load PASSED.";
         } else {
             resultMessage = "Test high load FAILED.";
         }
-        LOGGER.log(Level.INFO, resultMessage);
+        System.out.println(resultMessage);
 
         String[] invalidPublications =
                 {";;;invalidContents1", "Spurts;Me;Reuters;wrongType", "Entertainment;Someone;Reuters;;;",
@@ -143,7 +102,7 @@ public class ClientMain {
         } else {
             resultMessage = "Test invalid publications FAILED.";
         }
-        LOGGER.log(Level.INFO, resultMessage);
+        System.out.println(resultMessage);
 
         String[] invalidSubscriptions =
                 {";;;invalidContents1", ";;;", "Teknology;;;", ";stillNoContentsAllowed;;invalidContents2", "this;isn't;allowed;;"};
@@ -153,19 +112,19 @@ public class ClientMain {
         } else {
             resultMessage = "Test invalid subscriptions FAILED.";
         }
-        LOGGER.log(Level.INFO, resultMessage);
+        System.out.println(resultMessage);
 
         if(testLeave(remoteServerIp)) {
-            LOGGER.log(Level.INFO, "Test client leave PASSED.");
+            System.out.println(resultMessage);
         } else {
-            LOGGER.log(Level.INFO, "Test client leave FAILED.");
+            System.out.println(resultMessage);
         }
         if(testUnsubscribe(protocol, remoteServerIp)) {
             resultMessage = "Test unsubscribe PASSED.";
         } else {
             resultMessage = "Test unsubscribe FAILED.";
         }
-        LOGGER.log(Level.INFO, resultMessage);
+        System.out.println(resultMessage);
 
     }
 
@@ -328,7 +287,7 @@ public class ClientMain {
 
         // public 'server' ip is 73.242.4.186. Testing localhost just to get it up and going.
         String remoteServerIp = args[0];
-        LOGGER.log(Level.INFO, remoteServerIp);
+        LOGGER.log(Level.INFO, "Attempting to communicate with server at " + remoteServerIp);
 
         runAllTests(remoteServerIp, CommunicateArticle.ARTICLE_PROTOCOL);
     }
