@@ -151,7 +151,10 @@ public class Client implements Runnable {
         startMessageListener();
 //        establishSecurityManager();
         establishRemoteObject();
-        join();
+        if (!join()) {
+            LOGGER.log(Level.WARNING, "Server refused join (likely because it already has MAXCLIENTS). Cleaning up...");
+            cleanup();
+        }
     }
 
     private void startMessageListener() throws SocketException {

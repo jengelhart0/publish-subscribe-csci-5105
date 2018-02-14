@@ -127,7 +127,7 @@ public class ClientMain {
         }
         LOGGER.log(Level.INFO, resultMessage);
 
-        if(testHighLoad(remoteServerIp, 1000, protocol, publications1, subscriptions1)) {
+        if(testHighLoad(remoteServerIp, 50000, protocol, publications1, subscriptions1)) {
             resultMessage = "Test high load PASSED.";
         } else {
             resultMessage = "Test high load FAILED.";

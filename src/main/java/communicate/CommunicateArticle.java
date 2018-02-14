@@ -10,7 +10,7 @@ import java.util.Set;
 public interface CommunicateArticle extends Communicate {
     String NAME = "CommunicateArticle";
 
-    int MAXCLIENTS = 100000;
+    int MAXCLIENTS = 5000;
 
     int SERVER_LIST_SIZE = 1024;
 
