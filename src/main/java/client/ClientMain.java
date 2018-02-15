@@ -279,9 +279,135 @@ public class ClientMain {
         return passed;
     }
 
+    public static void enterInteractiveLoop(String remoteServerIp, Protocol protocol) throws IOException, NotBoundException {
+        int listenPort = 13888;
+        List<Client> clients = new ArrayList<>();
+        String menu = "Welcome to the interactive mode of this Publish-Subscribe system\n" +
+                "Options:" +
+                "\n\tCreate new client:\t\ttype 'create'" +
+                "\n\tSee client list:\t\ttype 'list'" +
+                "\n\tSee client messages arrived so far:\t\ttype '<client number> retrieve" +
+                "\n\tAdd subscription:\t\ttype '<client number> subscribe <valid subscription format>'" +
+                "\n\tRemove subscription:\t\ttype '<client number> unsubscribe <valid subscription format>'" +
+                "\n\tPublish:\t\ttype '<client number> publish <valid publication format>'" +
+                "\n\tLeave:\t\ttype '<client number> leave'" +
+                "\n\nSee this menu again: type 'menu'";
+
+        try (Scanner reader = new Scanner(System.in)) {
+            System.out.println(menu);
+            String[] parsedInput;
+            String firstWord;
+            while(true) {
+
+                try {
+                    String input = reader.nextLine();
+                    parsedInput = input.split(" ");
+                    firstWord = parsedInput[0];
+
+                    switch (firstWord) {
+                        case "create":
+                            clients.add(createNewClient(remoteServerIp, listenPort++));
+                            System.out.println("Created client " + Integer.toString(clients.size() - 1));
+                            break;
+                        case "list":
+                            System.out.println("Existing clients");
+                            for (int i = 0; i < clients.size(); i++) {
+                                System.out.println("\tClient :" + Integer.toString(i));
+                            }
+                            break;
+                        case "menu":
+                            System.out.println(menu);
+                            break;
+                        default:
+                            int clientIdx = getClientIdxIfInputValid(parsedInput, clients);
+                            if (clientIdx >= 0) {
+                                String command = parsedInput[1];
+                                executeInteractiveClientCommand(clients.get(clientIdx), clientIdx, parsedInput);
+                            }
+                            break;
+                    }
+                } catch (IOException | NotBoundException e) {
+                    System.out.println("Attempt to create client failed: " + e.toString());
+                }
+            }
+        } finally {
+            for(Client client : clients) {
+                client.terminateClient();
+            }
+        }
+    }
+
+    public static int getClientIdxIfInputValid(String[] parsedInput, List<Client> clients) {
+        int clientIdx = Integer.parseInt(parsedInput[0]);
+        if (clientIdx < 0 || clientIdx >= clients.size()) {
+            System.out.println("Invalid client number. Disappointing.");
+            return -1;
+        }
+        if (parsedInput.length < 2) {
+            System.out.println("Too few arguments. Review menu options.");
+            return -1;
+        }
+        return clientIdx;
+    }
+
+    private static void executeInteractiveClientCommand(Client client, int clientIdx, String[] parsedInput) {
+        try {
+            String command = parsedInput[1];
+            Protocol protocol = CommunicateArticle.ARTICLE_PROTOCOL;
+            boolean success;
+            if (parsedInput.length >= 3) {
+                String rawMessage = Arrays.asList(parsedInput).subList(2, parsedInput.length);
+                switch (command) {
+                    case "subscribe":
+                        success = client.subscribe(new Message(protocol, parsedInput[2], true));
+                        break;
+                    case "unsubscribe":
+                        success = client.unsubscribe(new Message(protocol, parsedInput[2], true));
+                        break;
+                    case "publish":
+                        success = client.publish(new Message(protocol, parsedInput[2], false));
+                        break;
+                    default:
+                        System.out.println("Invalid command for client. Review menu options");
+                        success = false;
+                }
+                if (success) {
+                    System.out.println("Message command with message " + rawMessage
+                            + " made for client " + Integer.toString(clientIdx));
+                } else {
+                    System.out.println("Message command attempt failed.");
+                }
+
+            } else {
+                switch (command) {
+                    case "retrieve":
+                        System.out.println("Messages that have arrived for client " + Integer.toString(clientIdx));
+                        List<Message> feed = client.getCurrentMessageFeed();
+                        for (Message m : feed) {
+                            System.out.println("\t" + m.asRawMessage());
+                        }
+                        break;
+                    case "leave":
+                        if(client.leave()) {
+                            System.out.println("Leave command accepted.");
+                        } else {
+                            System.out.println("Leave command failed.");
+                        }
+                        break;
+                    default:
+                        System.out.println("Invalid command for client. Review menu options");
+                }
+            }
+        } catch (IllegalArgumentException i) {
+            System.out.println("Invalid message format. Make sure you know the protocol!");
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.out.println("Too few arguments. Review menu options.");
+        }
+    }
+
     public static void main(String[] args) throws IOException, NotBoundException, InterruptedException {
 
-        if (!(args.length == 1)) {
+        if (args.length < 1) {
             LOGGER.log(Level.SEVERE, "Need to pass single argument IPv4 address of server.");
         }
 
@@ -289,6 +415,10 @@ public class ClientMain {
         String remoteServerIp = args[0];
         LOGGER.log(Level.INFO, "Attempting to communicate with server at " + remoteServerIp);
 
-        runAllTests(remoteServerIp, CommunicateArticle.ARTICLE_PROTOCOL);
+        if (args.length == 2 && args[1].equals("runAllTests")) {
+            runAllTests(remoteServerIp, CommunicateArticle.ARTICLE_PROTOCOL);
+        } else {
+            enterInteractiveLoop(remoteServerIp, CommunicateArticle.ARTICLE_PROTOCOL);
+        }
     }
 }
