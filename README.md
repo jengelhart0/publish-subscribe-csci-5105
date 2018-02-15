@@ -69,7 +69,7 @@ Run the registry_test_server binary on the server machine.
 Navigate to project root, cd to /build/classes/java/main. Run 'java ServerMain <server machine ip>'.
 You can optionally run registry tests when starting the server with the following:
 
-java ServerMain '<server machine ip> <testTeardown OR testGetList>'
+'java ServerMain [server machine ip>] [testTeardown OR testGetList]'
 
 ##Client
 
