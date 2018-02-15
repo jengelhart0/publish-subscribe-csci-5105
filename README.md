@@ -56,40 +56,40 @@ Every Message, publication or subscription, contains a Query. A query will store
 
 Upon retrieval, we simply use the subscription Message's query to retrieve the publications that match that query's field-value pairs. We take the intersection of the publications matched from each of those keys, and return them to the client. This is fast because we only retrieve publications from a PublicationList that arrived after the lastReceived for that query field, and because these lookups are fast. We use TreeSets to hold the matches, so intersecting is reasonably fast as well (i.e., through O(logn) contains()).
 
-#How to Build:
+# How to Build:
 
 Navigate to the project root. Run ./gradlew clean build.
 
-#How to Run:
+# How to Run:
 
 ##Server
 
 Run the registry_test_server binary on the server machine.
 
-Navigate to project root, cd to /build/classes/java/main. Run 'java ServerMain <server machine ip>'.
+Navigate to project root, cd to /build/classes/java/main. Run 'java ServerMain [server machine ip]'.
 You can optionally run registry tests when starting the server with the following:
 
-'java ServerMain [server machine ip>] [testTeardown OR testGetList]'
+'java ServerMain [server machine ip] [testTeardown OR testGetList]'
 
-##Client
+## Client
 
-Navigate to project root, cd to /build/classes/java/main. Run 'java ClientMain <server machine ip>'.
+Navigate to project root, cd to /build/classes/java/main. Run 'java ClientMain [server machine ip]'.
 
 This begins interactive mode, where a menu will give you options.
 
-To run tests on client run 'java ClientMain <server machine ip> <runAllTests>'.
+To run tests on client run 'java ClientMain [server machine ip] [runAllTests]'.
 
 Note that running tests takes awhile because the testing thread sleeps to ensure messages pulls
 have arrived.
 
-#Testing Description:
+# Testing Description:
 
-Tests:
-Client Side:
+## Current Tests:
+### Client Side:
 -Run single publisher, single subscriber, with and without wildcard matching tests.
 -Run multiple subscribers, with and without wildcard matching tests.
 -Run invalid publication and invalid subscription tests.
 -Run high load test.
 -Run test leave.
-Server side:
+### Server side:
 -Deregister and GetLists with registry server.
