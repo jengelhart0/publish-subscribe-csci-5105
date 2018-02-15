@@ -56,21 +56,6 @@ Every Message, publication or subscription, contains a Query. A query will store
 
 Upon retrieval, we simply use the subscription Message's query to retrieve the publications that match that query's field-value pairs. We take the intersection of the publications matched from each of those keys, and return them to the client. This is fast because we only retrieve publications from a PublicationList that arrived after the lastReceived for that query field, and because these lookups are fast. We use TreeSets to hold the matches, so intersecting is reasonably fast as well (i.e., through O(logn) contains()).
 
-#Comparison to Google PubSub:
-
-The implementation of Google PubSub was significantly easier. What was between 1000-2000 lines of Java code became 100 or so lines (albeit with less functionality). It seems that the concept of a Topic is an additional helpful abstraction. I also think one simple structural design that helps Google PubSub, is the 'file system'/path approach to naming subscriptions/topics.
-
-Utilizing callbacks/futures (in Python) is an efficient, albeit a bit more complex approach (in terms of implementation).
-
-!NOTE ABOUT Google PubSub implementation:
-
- As a one person group, I ran out of time before implementing the full Google PubSub implementation. I have provided simple source code in Python that approximates it but for the following reasons I couldn't finish:
-
- 1. I couldn't get the commands for setting up Go to work
- 2. I ran into technical problems with my CSE labs account: I was out of disk space, even though the largest
- directories on my account were all related to this 5105 project (which shouldn't have been an issue). I consulted with the CSE operator, who confirmed what I was seeing but didn't have any suggestions on how to proceed. Thus, I couldn't get all of the needed Go files on disk. I switched over to Python, but after this
- ran out of time to complete the implementation.
-
 #How to Build:
 
 Navigate to the project root. Run ./gradlew clean build.
@@ -81,18 +66,18 @@ Navigate to the project root. Run ./gradlew clean build.
 
 Run the registry_test_server binary on the server machine.
 
-Navigate to project root, cd to /build/classes/java/main. Run java ServerMain <server machine ip>.
+Navigate to project root, cd to /build/classes/java/main. Run 'java ServerMain <server machine ip>'.
 You can optionally run registry tests when starting the server with the following:
 
-java ServerMain <server machine ip> <testTeardown OR testGetList>
+java ServerMain '<server machine ip> <testTeardown OR testGetList>'
 
 ##Client
 
-Navigate to project root, cd to /build/classes/java/main. Run java ClientMain <server machine ip>.
+Navigate to project root, cd to /build/classes/java/main. Run 'java ClientMain <server machine ip>'.
 
 This begins interactive mode, where a menu will give you options.
 
-To run tests on client run java ClientMain <server machine ip> <runAllTests>.
+To run tests on client run 'java ClientMain <server machine ip> <runAllTests>'.
 
 Note that running tests takes awhile because the testing thread sleeps to ensure messages pulls
 have arrived.
