@@ -297,11 +297,15 @@ public class ClientMain {
             System.out.println(menu);
             String[] parsedInput;
             String firstWord;
+            boolean terminate = false;
             while(true) {
-
+                if(terminate) {
+                    break;
+                }
                 try {
                     String input = reader.nextLine();
                     parsedInput = input.split(" ");
+
                     firstWord = parsedInput[0];
 
                     switch (firstWord) {
@@ -318,11 +322,14 @@ public class ClientMain {
                         case "menu":
                             System.out.println(menu);
                             break;
+                        case "terminate":
+                            System.out.println("Terminating.");
+                            terminate = true;
                         default:
                             int clientIdx = getClientIdxIfInputValid(parsedInput, clients);
                             if (clientIdx >= 0) {
                                 String command = parsedInput[1];
-                                executeInteractiveClientCommand(clients.get(clientIdx), clientIdx, parsedInput);
+                                executeInteractiveClientCommand(clients, clientIdx, parsedInput);
                             }
                             break;
                     }
@@ -337,35 +344,42 @@ public class ClientMain {
         }
     }
 
-    public static int getClientIdxIfInputValid(String[] parsedInput, List<Client> clients) {
-        int clientIdx = Integer.parseInt(parsedInput[0]);
-        if (clientIdx < 0 || clientIdx >= clients.size()) {
-            System.out.println("Invalid client number. Disappointing.");
+    private static int getClientIdxIfInputValid(String[] parsedInput, List<Client> clients) {
+        try {
+            int clientIdx = Integer.parseInt(parsedInput[0]);
+            if (clientIdx < 0 || clientIdx >= clients.size()) {
+                System.out.println("Invalid client number. Disappointing.");
+                return -1;
+            }
+            if (parsedInput.length < 2) {
+                System.out.println("Too few arguments. Review menu options.");
+                return -1;
+            }
+            return clientIdx;
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid command. Review menu options");
             return -1;
         }
-        if (parsedInput.length < 2) {
-            System.out.println("Too few arguments. Review menu options.");
-            return -1;
-        }
-        return clientIdx;
     }
 
-    private static void executeInteractiveClientCommand(Client client, int clientIdx, String[] parsedInput) {
+    private static void executeInteractiveClientCommand(List<Client> clients, int clientIdx, String[] parsedInput) {
         try {
+            Client client = clients.get(clientIdx);
             String command = parsedInput[1];
             Protocol protocol = CommunicateArticle.ARTICLE_PROTOCOL;
             boolean success;
             if (parsedInput.length >= 3) {
-                String rawMessage = Arrays.asList(parsedInput).subList(2, parsedInput.length);
+                String rawMessage = String.join(
+                        " ", Arrays.asList(parsedInput).subList(2, parsedInput.length));
                 switch (command) {
                     case "subscribe":
-                        success = client.subscribe(new Message(protocol, parsedInput[2], true));
+                        success = client.subscribe(new Message(protocol, rawMessage, true));
                         break;
                     case "unsubscribe":
-                        success = client.unsubscribe(new Message(protocol, parsedInput[2], true));
+                        success = client.unsubscribe(new Message(protocol, rawMessage, true));
                         break;
                     case "publish":
-                        success = client.publish(new Message(protocol, parsedInput[2], false));
+                        success = client.publish(new Message(protocol, rawMessage, false));
                         break;
                     default:
                         System.out.println("Invalid command for client. Review menu options");
@@ -381,7 +395,7 @@ public class ClientMain {
             } else {
                 switch (command) {
                     case "retrieve":
-                        System.out.println("Messages that have arrived for client " + Integer.toString(clientIdx));
+                        System.out.println("Unread messages that have arrived for client " + Integer.toString(clientIdx));
                         List<Message> feed = client.getCurrentMessageFeed();
                         for (Message m : feed) {
                             System.out.println("\t" + m.asRawMessage());
@@ -390,6 +404,7 @@ public class ClientMain {
                     case "leave":
                         if(client.leave()) {
                             System.out.println("Leave command accepted.");
+                            clients.remove(client);
                         } else {
                             System.out.println("Leave command failed.");
                         }
@@ -401,7 +416,7 @@ public class ClientMain {
         } catch (IllegalArgumentException i) {
             System.out.println("Invalid message format. Make sure you know the protocol!");
         } catch (ArrayIndexOutOfBoundsException e) {
-            System.out.println("Too few arguments. Review menu options.");
+            System.out.println("Wrong number of arguments. Review menu options.");
         }
     }
 
