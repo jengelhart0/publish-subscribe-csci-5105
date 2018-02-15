@@ -99,7 +99,6 @@ public class Client implements Runnable {
         }
 
         String address = this.localAddress.getHostAddress();
-        // TODO: replace this by having communicate calls implement function interface and just pass the function
         if (message == null) {
             switch (call) {
                 case JOIN:
@@ -148,7 +147,6 @@ public class Client implements Runnable {
 
     private void initializeRemoteCommunication() throws RemoteException, NotBoundException, SocketException {
         startMessageListener();
-//        establishSecurityManager();
         establishRemoteObject();
         if (!join()) {
             LOGGER.log(Level.WARNING, "Server refused join (likely because it already has MAXCLIENTS). Cleaning up...");
@@ -167,14 +165,7 @@ public class Client implements Runnable {
         }
     }
 
-//    private void establishSecurityManager() {
-//        if (System.getSecurityManager() == null) {
-//            System.setSecurityManager(new SecurityManager());
-//        }
-//    }
-
     private void establishRemoteObject() throws RemoteException, NotBoundException {
-//        Registry registry = LocateRegistry.getRegistry(this.remoteHost, this.remoteServerPort);
         Registry registry = LocateRegistry.getRegistry(this.remoteHost);
         this.communicate = (Communicate) registry.lookup(this.communicateName);
     }

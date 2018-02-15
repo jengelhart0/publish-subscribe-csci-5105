@@ -88,9 +88,6 @@ public class ClientManager implements CommunicationManager {
         store.publish(message);
     }
 
-    // TODO: Gracefully just return if client has called Leave() (could happen if a pull task is still on executor after Leave()).
-    // TODO: Go ahead and let any other task just finish up in such a circumstance.
-
     @Override
     public void pullSubscriptionMatchesFromStore() {
         if(!clientLeft) {
@@ -144,9 +141,6 @@ public class ClientManager implements CommunicationManager {
                 DatagramPacket packetToSend = new DatagramPacket(
                         messageBuffer, messageSize, InetAddress.getByName(clientIp), this.clientPort);
 
-//                dataOutputStream.writeUTF(paddedPublication);
-//                dataOutputStream.flush();
-//                deliveryPacket.setData(byteArrayOutputStream.toByteArray());
                 deliverySocket.send(packetToSend);
             }
         }

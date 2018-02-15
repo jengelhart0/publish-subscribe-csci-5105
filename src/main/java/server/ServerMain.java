@@ -50,8 +50,6 @@ public class ServerMain {
 
     public static void main(String[] args) throws IOException, InterruptedException{
 
-        // public IP was 73.242.4.186
-        // currently just trying to get localhost working
         if (args.length < 1) {
             LOGGER.log(Level.SEVERE, "Need to pass single argument IPv4 address of server.");
             return;
@@ -75,10 +73,6 @@ public class ServerMain {
                 LOGGER.log(Level.SEVERE, "Usage: java ServerMain <serverIp> <test name>");
                 return;
             }
-
-            // We must always run server locally to this codebase, so...
-//            InetAddress serverIp = InetAddress.getByName(args[0]);
-//            InetAddress serverIp = InetAddress.getByName("127.0.0.1");
             startServer(remoteServerIp);
         }
     }

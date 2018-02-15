@@ -41,8 +41,6 @@ public class Coordinator implements Communicate {
 
     private int getListPort;
 
-//    private Thread subscriptionPullSchedulerThread;
-
     private int rmiPort;
 
     private InetAddress registryServerAddress;
@@ -150,23 +148,15 @@ public class Coordinator implements Communicate {
 
 
     private void makeThisARemoteCommunicationServer() {
-//        if(System.getSecurityManager() == null) {
-//            System.setSecurityManager(new SecurityManager());
-//        }
         LOGGER.log(Level.INFO, "IP " + this.ip.getHostAddress());
         LOGGER.log(Level.INFO, "Port " + Integer.toString(this.rmiPort));
 
         try {
-//            System.setProperty("java.rmi.server.hostname", this.ip.getHostAddress());
             System.setProperty("java.rmi.server.hostname", this.ip.getHostAddress());
 
-//            Communicate stub =
-//                    (Communicate) UnicastRemoteObject.exportObject(this, this.rmiPort);
             Communicate stub =
                     (Communicate) UnicastRemoteObject.exportObject(this, 0);
-//            Registry registry = LocateRegistry.getRegistry(ip.getHostAddress());
             Registry registry = LocateRegistry.createRegistry(this.rmiPort);
-//            Registry registry = LocateRegistry.getRegistry();
             registry.rebind(this.name, stub);
             LOGGER.log(Level.INFO, "Coordinator bound");
         } catch (RemoteException re) {
@@ -177,7 +167,6 @@ public class Coordinator implements Communicate {
 
     private void setRegistryServerMessages() throws UnknownHostException {
         String ip = this.ip.getHostAddress();
-        // TODO: Figure out what Port vs. RMI Port means...
         this.registerMessage = "Register;RMI;" + ip + ";" + heartbeatPort + ";" + name + ";" + rmiPort;
         this.deregisterMessage = "Deregister;RMI;" + ip + ";" + heartbeatPort;
     }

@@ -27,7 +27,6 @@ public abstract class Listener implements Runnable {
     public abstract void forceCloseSocket();
 
     public void listenAt(int listenPort, InetAddress localAddress) throws SocketException {
-//        this.listenSocket = new DatagramSocket(listenPort, localAddress);
         this.listenSocket = new DatagramSocket(listenPort);
     }
 

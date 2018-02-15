@@ -14,7 +14,6 @@ import java.util.logging.Logger;
 public class ClientListener extends Listener {
     private static final Logger LOGGER = Logger.getLogger( ClientListener.class.getName() );
 
-    // TODO: NEED TO EXAMINE WHETHER THERE ARE BETTER SYNCH OPTIONS
     private List<Message> messageFeed;
 
     ClientListener(Protocol protocol) {
@@ -63,14 +62,7 @@ public class ClientListener extends Listener {
 
     private Message getMessageFromRemote(byte[] messageBuffer, DatagramPacket packetToReceive) throws IOException {
         super.receivePacket(packetToReceive);
-
-//        try (DataInputStream inputStream = new DataInputStream(
-//                new ByteArrayInputStream(packetToReceive.getData()))) {
-//            String rawMessage = inputStream.readUTF();
-//            System.out.println("MESSAGE: " + rawMessage);
-            String rawMessage = new String(packetToReceive.getData(), 0, packetToReceive.getLength());
-//            System.out.println(rawMessage);
-            return new Message(super.getProtocol(), rawMessage, false);
-//        }
+        String rawMessage = new String(packetToReceive.getData(), 0, packetToReceive.getLength());
+        return new Message(super.getProtocol(), rawMessage, false);
     }
 }
