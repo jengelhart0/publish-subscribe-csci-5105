@@ -86,10 +86,10 @@ have arrived.
 
 ## Current Tests:
 ### Client Side:
--Run single publisher, single subscriber, with and without wildcard matching tests.
--Run multiple subscribers, with and without wildcard matching tests.
--Run invalid publication and invalid subscription tests.
--Run high load test.
--Run test leave.
+*Run single publisher, single subscriber, with and without wildcard matching tests.
+*Run multiple subscribers, with and without wildcard matching tests.
+*Run invalid publication and invalid subscription tests.
+*Run high load test.
+*Run test leave.
 ### Server side:
--Deregister and GetLists with registry server.
+*Deregister and GetLists with registry server.
