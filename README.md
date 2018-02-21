@@ -62,7 +62,7 @@ Navigate to the project root. Run ./gradlew clean build.
 
 # How to Run:
 
-##Server
+## Server
 
 Run the registry_test_server binary on the server machine.
 
