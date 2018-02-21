@@ -44,8 +44,6 @@ public class Coordinator implements Communicate {
     private HeartbeatListener heartbeatListener;
     private int heartbeatPort;
 
-    private int rmiPort;
-
     private InetAddress registryServerAddress;
     private int registryServerPort;
     private int serverListSize;
@@ -61,15 +59,15 @@ public class Coordinator implements Communicate {
     private Coordinator() {
     }
 
-    private void initialize(String name, int maxClients, Protocol protocol, int rmiPort, int heartbeatPort,
+    private void initialize(String name, int maxClients, Protocol protocol, int heartbeatPort,
                     InetAddress registryServerIp, int registryServerPort, int serverListSize) {
         try {
-            setCommunicationVariables(name, maxClients, protocol, rmiPort, heartbeatPort,
+            setCommunicationVariables(name, maxClients, protocol, heartbeatPort,
                     registryServerIp, registryServerPort, serverListSize);
-            registerWithRegistryServer();
             createClientTaskExecutor();
             startHeartbeat();
             makeThisARemoteCommunicationServer();
+            registerWithRegistryServer();
         } catch (IOException | RuntimeException e) {
             LOGGER.log(Level.SEVERE, "Failed on server initialization: " + e.toString());
         } finally {
@@ -87,7 +85,7 @@ public class Coordinator implements Communicate {
         }
     }
 
-    private void setCommunicationVariables(String name, int maxClients, Protocol protocol, int rmiPort, int heartbeatPort,
+    private void setCommunicationVariables(String name, int maxClients, Protocol protocol, int heartbeatPort,
                                            InetAddress registryServerIp, int registryServerPort, int serverListSize)
             throws UnknownHostException {
 
@@ -101,8 +99,6 @@ public class Coordinator implements Communicate {
 
         this.ip = InetAddress.getLocalHost();
         this.heartbeatPort = heartbeatPort;
-
-        this.rmiPort = rmiPort;
 
         this.registryServerAddress = registryServerIp;
         this.registryServerPort = registryServerPort;
@@ -133,7 +129,7 @@ public class Coordinator implements Communicate {
 
         try {
             Communicate stub =
-                    (Communicate) UnicastRemoteObject.exportObject(this, this.rmiPort);
+                    (Communicate) UnicastRemoteObject.exportObject(this, 0);
             Registry registry = LocateRegistry.getRegistry();
             registry.rebind(this.name, stub);
             LOGGER.log(Level.FINE, "Coordinator bound");
@@ -146,7 +142,7 @@ public class Coordinator implements Communicate {
         String ip = this.ip.getHostAddress();
 
         // TODO: Figure out what Port vs. RMI Port means...
-        this.registerMessage = "Register;RMI;" + ip + ";" + heartbeatPort + ";" + name + ";" + rmiPort;
+        this.registerMessage = "Register;RMI;" + ip + ";" + heartbeatPort + ";" + name + "!!!!!";
         this.deregisterMessage = "Deregister;RMI;" + ip + ";" + heartbeatPort;
         this.getListMessage = "GetList;RMI;" + ip + ";" + heartbeatPort;
     }
@@ -184,17 +180,15 @@ public class Coordinator implements Communicate {
     }
 
     private void sendRegistryServerMessage(String rawMessage) throws IOException {
-        DatagramPacket packet = makeRegistryServerPacket(rawMessage);
+        DatagramPacket packet = makeRegistryServerPacket();
         try (DatagramSocket socket = new DatagramSocket()) {
             socket.send(packet);
         }
     }
 
-    private DatagramPacket makeRegistryServerPacket(String rawMessage) {
+    private DatagramPacket makeRegistryServerPacket() {
         int messageSize = this.protocol.getMessageSize();
-        DatagramPacket packet = new DatagramPacket(new byte[messageSize], messageSize, this.registryServerAddress, registryServerPort);
-        packet.setData(rawMessage.getBytes());
-        return packet;
+        return new DatagramPacket(new byte[messageSize], messageSize, this.registryServerAddress, registryServerPort);
     }
 
     @Override
@@ -316,7 +310,6 @@ public class Coordinator implements Communicate {
                 CommunicateArticle.NAME,
                 CommunicateArticle.MAXCLIENTS,
                 CommunicateArticle.ARTICLE_PROTOCOL,
-                CommunicateArticle.REMOTE_OBJECT_PORT,
                 CommunicateArticle.HEARTBEAT_PORT,
                 InetAddress.getByName(CommunicateArticle.REGISTRY_SERVER_IP),
                 CommunicateArticle.REGISTRY_SERVER_PORT,
