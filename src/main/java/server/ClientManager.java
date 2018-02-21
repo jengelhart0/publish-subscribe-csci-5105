@@ -1,9 +1,7 @@
-package server.implementation;
+package server;
 
-import server.api.CommunicationManager;
-import server.api.MessageStore;
-import Message.Message;
-import Message.Protocol;
+import message.Message;
+import message.Protocol;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -76,7 +74,7 @@ public class ClientManager implements CommunicationManager {
             List<Message> afterUnsubscribe = subscriptions
                     .stream()
                     .filter(subscription -> !subscription.asRawMessage().equals(unsubscriptionString))
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toCollection(LinkedList::new));
 
             this.subscriptions = Collections.synchronizedList(afterUnsubscribe);
         }
@@ -89,9 +87,6 @@ public class ClientManager implements CommunicationManager {
         }
         store.publish(message);
     }
-
-    // TODO: Gracefully just return if client has called Leave() (could happen if a pull task is still on executor after Leave()).
-    // TODO: Go ahead and let any other task just finish up in such a circumstance.
 
     @Override
     public void pullSubscriptionMatchesFromStore() {
@@ -113,6 +108,7 @@ public class ClientManager implements CommunicationManager {
                 deliverPublications(toDeliver, deliveryPacket, messageSize);
             } catch (IOException e) {
                 LOGGER.log(Level.SEVERE, "Failed to send matched publications in ClientManager: " + e.toString());
+                e.printStackTrace();
             }
         }
     }
@@ -133,14 +129,19 @@ public class ClientManager implements CommunicationManager {
              ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream))
         {
+            byte[] messageBuffer = new byte[messageSize];
+            String paddedPublication;
             for (String publication: publicationsToDeliver) {
-                if(publication.length() != messageSize) {
+                if(publication.length() > messageSize) {
                     throw new IllegalArgumentException(
                             "ClientManager tried to deliver publication violating protocol: wrong messageSize");
                 }
-                dataOutputStream.writeChars(publication);
-                deliveryPacket.setData(byteArrayOutputStream.toByteArray());
-                deliverySocket.send(deliveryPacket);
+                paddedPublication = this.protocol.padMessage(publication);
+                messageBuffer = paddedPublication.getBytes();
+                DatagramPacket packetToSend = new DatagramPacket(
+                        messageBuffer, messageSize, InetAddress.getByName(clientIp), this.clientPort);
+
+                deliverySocket.send(packetToSend);
             }
         }
     }

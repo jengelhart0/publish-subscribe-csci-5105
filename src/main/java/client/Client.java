@@ -1,5 +1,6 @@
 package client;
 
+import java.io.IOException;
 import java.net.*;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -13,8 +14,8 @@ import java.util.logging.Logger;
 import communicate.Communicate;
 import communicate.CommunicateArticle;
 import communicate.Communicate.RemoteMessageCall;
-import Message.Message;
-import Message.Protocol;
+import message.Message;
+import message.Protocol;
 
 public class Client implements Runnable {
     private static final Logger LOGGER = Logger.getLogger( Client.class.getName() );
@@ -22,20 +23,28 @@ public class Client implements Runnable {
     private Communicate communicate = null;
     private String communicateName;
     private String remoteHost;
+    private int remoteServerPort;
     private Protocol protocol;
 
-    private ClientListener listener = null;
+    private boolean terminate;
+    private final Object terminateLock = new Object();
 
-    private InetAddress localAddress;
+    private ClientListener listener = null;
     private int listenPort;
 
-    public Client (String remoteHost, String communicateName, Protocol protocol,
-                   int listenPort) throws UnknownHostException {
+    private InetAddress localAddress;
+
+    public Client (String remoteHost, int remoteServerPort, String communicateName, Protocol protocol,
+                   int listenPort) throws IOException, NotBoundException {
         this.remoteHost = remoteHost;
+        this.remoteServerPort = remoteServerPort;
         this.communicateName = communicateName;
         this.protocol = protocol;
         this.localAddress = InetAddress.getLocalHost();
         this.listenPort = listenPort;
+        this.terminate = false;
+
+        initializeRemoteCommunication();
     }
 
     public boolean join() {
@@ -70,12 +79,10 @@ public class Client implements Runnable {
         try {
             boolean isCallSuccessful = makeCall(message, call);
             if (!isCallSuccessful) {
-                throw new RemoteException("Communication attempt returned failure (i.e., false).");
+                throw new RuntimeException("RMI returned false.");
             }
         } catch (RemoteException | IllegalArgumentException e) {
-            LOGGER.log(Level.SEVERE,
-                    "Attempt to establish communication or communicate" + message.asRawMessage() +
-                            "failed: " + e.toString());
+            LOGGER.log(Level.SEVERE, "Attempt to establish communication or communicate failed: " + e.toString());
             return false;
         }
         return true;
@@ -87,12 +94,11 @@ public class Client implements Runnable {
         if (this.communicate == null) {
             throw new IllegalArgumentException(
                     "It appears client's remote communication is unestablished. " +
-                    "Ensure you called start() on client thread."
+                            "Ensure you called start() on client thread."
             );
         }
 
         String address = this.localAddress.getHostAddress();
-        // TODO: replace this by having communicate calls implement function interface and just pass the function
         if (message == null) {
             switch (call) {
                 case JOIN:
@@ -122,13 +128,18 @@ public class Client implements Runnable {
     @Override
     public void run() {
         try {
-            initializeRemoteCommunication();
             while(true) {
+                synchronized (terminateLock) {
+                    if (terminate) {
+                        break;
+                    }
+                }
                 ping();
                 Thread.sleep(10000);
             }
-        } catch (RemoteException | NotBoundException | InterruptedException | SocketException e) {
+        } catch (RemoteException | InterruptedException e) {
             LOGGER.log(Level.SEVERE, e.toString());
+            e.printStackTrace();
         } finally {
             cleanup();
         }
@@ -136,9 +147,11 @@ public class Client implements Runnable {
 
     private void initializeRemoteCommunication() throws RemoteException, NotBoundException, SocketException {
         startMessageListener();
-        establishSecurityManager();
         establishRemoteObject();
-        join();
+        if (!join()) {
+            LOGGER.log(Level.WARNING, "Server refused join (likely because it already has MAXCLIENTS). Cleaning up...");
+            cleanup();
+        }
     }
 
     private void startMessageListener() throws SocketException {
@@ -152,33 +165,24 @@ public class Client implements Runnable {
         }
     }
 
-    private void establishSecurityManager() {
-        if (System.getSecurityManager() == null) {
-            System.setSecurityManager(new SecurityManager());
-        }
-    }
-
     private void establishRemoteObject() throws RemoteException, NotBoundException {
         Registry registry = LocateRegistry.getRegistry(this.remoteHost);
         this.communicate = (Communicate) registry.lookup(this.communicateName);
     }
 
+    public void terminateClient() {
+        synchronized (terminateLock) {
+            this.terminate = true;
+        }
+    }
+
     private void cleanup() {
         leave();
         this.listener.tellThreadToStop();
+        this.listener.forceCloseSocket();
     }
 
-    List<Message> getCurrentMessageFeed() {
+    public List<Message> getCurrentMessageFeed() {
         return this.listener.getCurrentMessageFeed();
-    }
-
-    public static void main(String[] args) throws UnknownHostException {
-        Client testClient = new Client(
-                "localhost",
-                CommunicateArticle.NAME,
-                CommunicateArticle.ARTICLE_PROTOCOL,
-                8888);
-
-        new Thread(testClient).start();
     }
 }

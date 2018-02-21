@@ -1,20 +1,15 @@
-package server.implementation;
+package server;
 
 import communicate.Communicate;
-import communicate.CommunicateArticle;
-import server.api.CommunicationManager;
-import Message.Message;
-import Message.Protocol;
+import message.Message;
+import message.Protocol;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.*;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -44,49 +39,54 @@ public class Coordinator implements Communicate {
     private HeartbeatListener heartbeatListener;
     private int heartbeatPort;
 
+    private int rmiPort;
+
     private InetAddress registryServerAddress;
     private int registryServerPort;
     private int serverListSize;
 
     private String registerMessage;
     private String deregisterMessage;
-    private String getListMessage;
 
-    private static Coordinator getInstance() {
+    public static Coordinator getInstance() {
         return ourInstance;
     }
 
     private Coordinator() {
     }
 
-    private void initialize(String name, int maxClients, Protocol protocol, int heartbeatPort,
+    public void initialize(String name, int maxClients, Protocol protocol, InetAddress rmiIp, int rmiPort, int heartbeatPort,
                     InetAddress registryServerIp, int registryServerPort, int serverListSize) {
         try {
-            setCommunicationVariables(name, maxClients, protocol, heartbeatPort,
+            setCommunicationVariables(name, maxClients, protocol, rmiIp, rmiPort, heartbeatPort,
                     registryServerIp, registryServerPort, serverListSize);
             createClientTaskExecutor();
             startHeartbeat();
+            startSubscriptionPullScheduler();
             makeThisARemoteCommunicationServer();
             registerWithRegistryServer();
         } catch (IOException | RuntimeException e) {
             LOGGER.log(Level.SEVERE, "Failed on server initialization: " + e.toString());
-        } finally {
+            e.printStackTrace();
             cleanup();
         }
+        LOGGER.log(Level.INFO, "Finished initializing remote server.");
     }
 
-    private void cleanup() {
+    public void cleanup() {
         try {
             heartbeatListener.tellThreadToStop();
+            heartbeatListener.forceCloseSocket();
             deregisterFromRegistryServer();
             clientTaskExecutor.shutdown();
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "While cleaning up server: " + e.toString());
+            e.printStackTrace();
         }
     }
 
-    private void setCommunicationVariables(String name, int maxClients, Protocol protocol, int heartbeatPort,
-                                           InetAddress registryServerIp, int registryServerPort, int serverListSize)
+    private void setCommunicationVariables(String name, int maxClients, Protocol protocol, InetAddress rmiIp, int rmiPort,
+           int heartbeatPort, InetAddress registryServerIp, int registryServerPort, int serverListSize)
             throws UnknownHostException {
 
         this.name = name;
@@ -97,8 +97,10 @@ public class Coordinator implements Communicate {
 
         this.clientToClientManager = new ConcurrentHashMap<>();
 
-        this.ip = InetAddress.getLocalHost();
         this.heartbeatPort = heartbeatPort;
+
+        this.ip = rmiIp;
+        this.rmiPort = rmiPort;
 
         this.registryServerAddress = registryServerIp;
         this.registryServerPort = registryServerPort;
@@ -122,29 +124,47 @@ public class Coordinator implements Communicate {
         }
     }
 
+    private void startSubscriptionPullScheduler() {
+        Runnable subscriptionPullScheduler = () -> {
+            try {
+                while (true) {
+                    Thread.sleep(500);
+                    for (CommunicationManager manager: clientToClientManager.values()) {
+                        queueTaskFor(manager, CommunicationManager.Call.PULL_MATCHES, null);
+                    }
+                }
+            } catch (InterruptedException e) {
+                LOGGER.log(Level.SEVERE, e.toString());
+                e.printStackTrace();
+                throw new RuntimeException("Failure in subscription pull scheduler thread.");
+            }
+        };
+        new Thread(subscriptionPullScheduler).start();
+    }
+
+
     private void makeThisARemoteCommunicationServer() {
-        if(System.getSecurityManager() == null) {
-            System.setSecurityManager(new SecurityManager());
-        }
+        LOGGER.log(Level.INFO, "IP " + this.ip.getHostAddress());
+        LOGGER.log(Level.INFO, "Port " + Integer.toString(this.rmiPort));
 
         try {
+            System.setProperty("java.rmi.server.hostname", this.ip.getHostAddress());
+
             Communicate stub =
                     (Communicate) UnicastRemoteObject.exportObject(this, 0);
-            Registry registry = LocateRegistry.getRegistry();
+            Registry registry = LocateRegistry.createRegistry(this.rmiPort);
             registry.rebind(this.name, stub);
-            LOGGER.log(Level.FINE, "Coordinator bound");
+            LOGGER.log(Level.INFO, "Coordinator bound");
         } catch (RemoteException re) {
             LOGGER.log(Level.SEVERE, re.toString());
+            re.printStackTrace();
         }
     }
 
     private void setRegistryServerMessages() throws UnknownHostException {
         String ip = this.ip.getHostAddress();
-
-        // TODO: Figure out what Port vs. RMI Port means...
-        this.registerMessage = "Register;RMI;" + ip + ";" + heartbeatPort + ";" + name + "!!!!!";
+        this.registerMessage = "Register;RMI;" + ip + ";" + heartbeatPort + ";" + name + ";" + rmiPort;
         this.deregisterMessage = "Deregister;RMI;" + ip + ";" + heartbeatPort;
-        this.getListMessage = "GetList;RMI;" + ip + ";" + heartbeatPort;
     }
 
     private void registerWithRegistryServer() throws IOException {
@@ -155,40 +175,41 @@ public class Coordinator implements Communicate {
         sendRegistryServerMessage(this.deregisterMessage);
     }
 
-    private List<String> getListOfServers() throws IOException {
+    public String[] getListOfServers() throws IOException {
         int listSizeinBytes = this.serverListSize;
         DatagramPacket registryPacket = new DatagramPacket(new byte[listSizeinBytes], listSizeinBytes);
-        byte[] serversBuffer = new byte[listSizeinBytes];
 
         try (DatagramSocket getListSocket = new DatagramSocket()) {
+            String getListMessage = "GetList;RMI;"
+                    + ip.getHostAddress()
+                    + ";"
+                    + this.heartbeatPort;
             // sending here to minimize chance response arrives before we listen for it
-            sendRegistryServerMessage(this.getListMessage);
+            getListSocket.send(makeRegistryServerPacket(getListMessage));
             getListSocket.receive(registryPacket);
         }
+        String[] rawServerList = new String(registryPacket.getData(), 0, registryPacket.getLength(), "UTF8")
+                .split(this.protocol.getDelimiter());
 
-        try (DataInputStream inputStream = new DataInputStream(
-                new ByteArrayInputStream(registryPacket.getData()))) {
-            inputStream.read(serversBuffer);
+        String[] results = new String[rawServerList.length / 2];
+        for (int i = 0; i < rawServerList.length; i+=2) {
+            results[i / 2] = rawServerList[i] + ";" + rawServerList[i+1];
         }
-
-        String servers = new String(serversBuffer, "UTF8");
-
-        LOGGER.log(Level.INFO, servers);
-        // TODO: Need to figure out what the format of this is: handout not clear, check the log result of it.
-        System.exit(0);
-        return null;
+        return results;
     }
 
     private void sendRegistryServerMessage(String rawMessage) throws IOException {
-        DatagramPacket packet = makeRegistryServerPacket();
+        DatagramPacket packet = makeRegistryServerPacket(rawMessage);
         try (DatagramSocket socket = new DatagramSocket()) {
             socket.send(packet);
         }
     }
 
-    private DatagramPacket makeRegistryServerPacket() {
+    private DatagramPacket makeRegistryServerPacket(String rawMessage) {
         int messageSize = this.protocol.getMessageSize();
-        return new DatagramPacket(new byte[messageSize], messageSize, this.registryServerAddress, registryServerPort);
+        DatagramPacket packet = new DatagramPacket(new byte[messageSize], messageSize, this.registryServerAddress, registryServerPort);
+        packet.setData(rawMessage.getBytes());
+        return packet;
     }
 
     @Override
@@ -276,6 +297,7 @@ public class Coordinator implements Communicate {
             return new Message(this.protocol, rawMessage, isSubscription);
         } catch (IllegalArgumentException e) {
             LOGGER.log(Level.WARNING, "Invalid message received from");
+            e.printStackTrace();
             return null;
         }
     }
@@ -290,29 +312,5 @@ public class Coordinator implements Communicate {
 
     private String getIpPortString(String ip, int port) {
         return ip + this.protocol.getDelimiter() + Integer.toString(port);
-    }
-
-    void setRegisterMessage(String registerMessage) {
-        this.registerMessage = registerMessage;
-    }
-
-    void setDeregisterMessage(String deregisterMessage) {
-        this.deregisterMessage = deregisterMessage;
-    }
-
-    void setGetListMessage(String getListMessage) {
-        this.getListMessage = getListMessage;
-    }
-
-    public static void main(String[] args) throws UnknownHostException {
-        Coordinator coordinator = Coordinator.getInstance();
-        coordinator.initialize(
-                CommunicateArticle.NAME,
-                CommunicateArticle.MAXCLIENTS,
-                CommunicateArticle.ARTICLE_PROTOCOL,
-                CommunicateArticle.HEARTBEAT_PORT,
-                InetAddress.getByName(CommunicateArticle.REGISTRY_SERVER_IP),
-                CommunicateArticle.REGISTRY_SERVER_PORT,
-                CommunicateArticle.SERVER_LIST_SIZE);
     }
 }

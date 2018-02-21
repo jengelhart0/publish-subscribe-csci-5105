@@ -1,6 +1,6 @@
-package server.api;
+package server;
 
-import Message.Message;
+import message.Message;
 
 import java.io.IOException;
 

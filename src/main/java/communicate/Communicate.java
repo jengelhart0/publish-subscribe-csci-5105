@@ -4,6 +4,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface Communicate extends Remote {
+    String NAME = "Communicate";
 
     enum RemoteMessageCall {
         JOIN, LEAVE, PUBLISH, SUBSCRIBE, UNSUBSCRIBE
