@@ -16,14 +16,8 @@ public class ClientMain {
     private static final Logger LOGGER = Logger.getLogger( ClientMain.class.getName() );
 
     private static Client createNewClient(String remoteServerIp, int listenPort) throws IOException, NotBoundException {
-        Client client = new Client(
-                remoteServerIp,
-                CommunicateArticle.REMOTE_OBJECT_PORT,
-                Communicate.NAME,
-                CommunicateArticle.ARTICLE_PROTOCOL,
-                listenPort++);
-
-        new Thread(client).start();
+        Client client = new Client(CommunicateArticle.ARTICLE_PROTOCOL, listenPort);
+        client.initializeRemoteCommunication(remoteServerIp, CommunicateArticle.REMOTE_OBJECT_PORT, Communicate.NAME);
         return client;
     }
 
@@ -251,9 +245,8 @@ public class ClientMain {
     public static boolean testLeave(String remoteServerIp) throws IOException, NotBoundException {
         int listenPort = 10888;
         Client client = createNewClient(remoteServerIp, listenPort);
-        boolean left = client.leave();
         client.terminateClient();
-        return left;
+        return true;
     }
 
     public static boolean testUnsubscribe(Protocol protocol, String remoteServerIp)
@@ -426,6 +419,7 @@ public class ClientMain {
 
         if (args.length < 1) {
             LOGGER.log(Level.SEVERE, "Need to pass single argument IPv4 address of server.");
+            return;
         }
 
         // public 'server' ip is 73.242.4.186. Testing localhost just to get it up and going.

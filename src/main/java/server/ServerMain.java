@@ -1,43 +1,36 @@
-import communicate.Communicate;
 import communicate.CommunicateArticle;
-import server.Coordinator;
+import server.ReplicatedPubSubServer;
 
 import java.io.IOException;
-import java.net.*;
 
-import java.util.List;
+import java.net.InetAddress;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ServerMain {
-    private static final Logger LOGGER = Logger.getLogger( Coordinator.class.getName() );
+    private static final Logger LOGGER = Logger.getLogger( ReplicatedPubSubServer.class.getName() );
 
-    private static Coordinator startServer(String remoteServerIp) throws IOException {
-        Coordinator coordinator = Coordinator.getInstance();
-        coordinator.initialize(
-                Communicate.NAME,
-                CommunicateArticle.MAXCLIENTS,
-                CommunicateArticle.ARTICLE_PROTOCOL,
-                InetAddress.getByName(remoteServerIp),
-                CommunicateArticle.REMOTE_OBJECT_PORT,
-                CommunicateArticle.HEARTBEAT_PORT,
-                InetAddress.getByName(CommunicateArticle.REGISTRY_SERVER_IP),
-                CommunicateArticle.REGISTRY_SERVER_PORT,
-                CommunicateArticle.SERVER_LIST_SIZE);
-        return coordinator;
+    private static ReplicatedPubSubServer startServer(String remoteServerIp) throws IOException {
+        ReplicatedPubSubServer replicatedPubSubServer =
+                new ReplicatedPubSubServer.Builder(CommunicateArticle.ARTICLE_PROTOCOL, InetAddress.getByName(remoteServerIp))
+                .build();
+
+        replicatedPubSubServer.initialize();
+        return replicatedPubSubServer;
     }
 
     private static boolean teardownTest(String remoteServerIp) throws IOException, InterruptedException {
-        Coordinator server = startServer(remoteServerIp);
+        ReplicatedPubSubServer server = startServer(remoteServerIp);
         Thread.sleep(10000);
         server.cleanup();
         return true;
     }
 
-    private static String[] getListTest(String remoteServerIp) throws IOException, InterruptedException {
-        Coordinator server = startServer(remoteServerIp);
+    private static Set<String> getListTest(String remoteServerIp) throws IOException, InterruptedException {
+        ReplicatedPubSubServer server = startServer(remoteServerIp);
         Thread.sleep(3000);
-        String[] serverList = server.getListOfServers();
+        Set<String> serverList = server.getListOfServers();
         if (serverList != null) {
             System.out.print("Server List: ");
             for (String serverString: serverList) {
